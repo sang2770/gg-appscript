@@ -860,6 +860,23 @@
         }
       }
 
+      if (
+        e.target.matches(".submit-result-btn") ||
+        e.target.closest(".submit-result-btn")
+      ) {
+        const btn = e.target.matches(".submit-result-btn")
+          ? e.target
+          : e.target.closest(".submit-result-btn");
+        const taskId = btn.dataset.id;
+        const taskName = btn.dataset.name || taskId;
+
+        if (isAuthenticated && canUserSubmitResult(taskId)) {
+          openSubmitResultModal(taskId, taskName);
+        } else {
+          showToast("Bạn không có quyền nộp kết quả cho nhiệm vụ này", "error");
+        }
+      }
+
       // THÊM: Xử lý nút view-project-btn
       if (
         e.target.matches(".view-project-btn") ||
@@ -1191,6 +1208,7 @@
                           const canCopyDelete = isAdmin() || isProjectManager;
 
                           return `
+                            <button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
                             ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
                             <button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
                             ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
@@ -1798,6 +1816,7 @@
             const canCopyDelete = isAdmin() || isProjectManager;
 
             return `
+              <button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
               ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
               <button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
               ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
@@ -3344,6 +3363,23 @@
     }
   }
 
+  function formatDate(date) {
+    if (!date || date === "") return "";
+    try {
+      if (!(date instanceof Date)) {
+        date = new Date(date);
+      }
+
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      return "";
+    }
+  }
+
   function showLoading(message = "Đang xử lý...") {
     const overlay = document.getElementById("loading-overlay");
     if (overlay) {
@@ -3778,6 +3814,7 @@
                             project[COL.P_MANAGER] === currentUser.name;
                           const canCopyDelete = isAdmin() || isProjectManager;
                           return `
+                            <button class="action-btn action-btn-view submit-result-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
                             ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
                             <button class="action-btn action-btn-edit edit-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
                             ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
@@ -4385,6 +4422,7 @@
                 const canCopyDelete = isAdmin() || isProjectManager;
 
                 return `
+                  <button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
                   ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
                   <button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${task[COL.T_ID]}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
                   ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
@@ -5737,5 +5775,266 @@
         }
       })
       .join("");
+  }
+
+  // === SUBMIT RESULT FUNCTIONS ===
+
+  function canUserSubmitResult(taskId) {
+    if (!isAuthenticated) return false;
+
+    // Admin có thể nộp kết quả cho tất cả
+    if (isAdmin()) return true;
+
+    const task = allTasks.find((t) => t[COL.T_ID] === taskId);
+    if (!task) return false;
+
+    // Người được giao nhiệm vụ có thể nộp kết quả
+    if (task[COL.T_ASSIGNEE] === currentUser.name) return true;
+
+    // Người quản lý dự án có thể nộp kết quả
+    const project = allProjects.find((p) => p[COL.P_ID] === task[COL.T_PID]);
+    if (project && project[COL.P_MANAGER] === currentUser.name) return true;
+
+    return false;
+  }
+
+  function openSubmitResultModal(taskId, taskName) {
+    const task = allTasks.find((t) => t[COL.T_ID] === taskId);
+    if (!task) {
+      showToast("Không tìm thấy nhiệm vụ", "error");
+      return;
+    }
+
+    const currentResultLinks = task[COL.T_RESULT_LINKS] || "";
+    const currentOutput = task[COL.T_OUTPUT] || "";
+
+    const modalHTML = `
+      <div id="submit-result-modal" class="modal">
+        <div class="modal-content max-w-2xl">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-900">Nộp kết quả: ${taskName}</h3>
+            <button type="button" class="close-modal text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <form id="submit-result-form" class="space-y-6">
+            <div class="form-group">
+              <label class="form-label required">Link kết quả</label>
+              <textarea 
+                name="resultLinks" 
+                class="form-textarea" 
+                rows="4"
+                placeholder="Nhập các link kết quả (mỗi link một dòng)&#10;Ví dụ:&#10;https://drive.google.com/file/...&#10;https://docs.google.com/..."
+                required>${currentResultLinks}</textarea>
+              <div class="text-xs text-gray-500 mt-1">Mỗi link trên một dòng</div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Kết quả đầu ra</label>
+              <textarea 
+                name="output" 
+                class="form-textarea" 
+                rows="4"
+                placeholder="Mô tả chi tiết kết quả đầu ra, thành quả đạt được...">${currentOutput}</textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Hình ảnh minh họa</label>
+              <div class="space-y-3">
+                <div id="image-upload-container" class="grid grid-cols-2 gap-4">
+                  <!-- Image upload slots will be added here -->
+                </div>
+                <button 
+                  type="button" 
+                  id="add-image-btn"
+                  class="btn-secondary w-full"
+                >
+                  <i class="fas fa-plus mr-2"></i>Thêm hình ảnh
+                </button>
+                <div class="text-xs text-gray-500">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  Chỉ nhập link hình ảnh (Google Drive, imgur, etc.) hoặc base64 image data
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Cập nhật tiến độ (%)</label>
+              <div class="flex items-center space-x-4">
+                <input 
+                  type="range" 
+                  name="completion" 
+                  min="0" 
+                  max="100" 
+                  value="${parseInt(task[COL.T_COMPLETION] || 0)}"
+                  class="flex-1"
+                  id="completion-slider"
+                />
+                <div class="text-lg font-semibold text-blue-600 min-w-[3rem]">
+                  <span id="completion-value">${parseInt(task[COL.T_COMPLETION] || 0)}</span>%
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+              <button type="button" class="btn-secondary close-modal">Hủy</button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-upload mr-2"></i>Nộp kết quả
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("modals-container").innerHTML = modalHTML;
+
+    const modal = document.getElementById("submit-result-modal");
+    modal.classList.add("active");
+
+    // Setup completion slider
+    const slider = modal.querySelector("#completion-slider");
+    const valueDisplay = modal.querySelector("#completion-value");
+
+    slider.addEventListener("input", function () {
+      valueDisplay.textContent = this.value;
+    });
+
+    // Setup image upload functionality
+    setupImageUpload();
+
+    // Setup form submission
+    const form = modal.querySelector("#submit-result-form");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      handleSubmitResult(taskId, form);
+    });
+
+    // Setup close handlers
+    const closeButtons = modal.querySelectorAll(".close-modal");
+    closeButtons.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeModal("submit-result-modal");
+      });
+    });
+  }
+
+  function setupImageUpload() {
+    const container = document.getElementById("image-upload-container");
+    const addBtn = document.getElementById("add-image-btn");
+    let imageCount = 0;
+
+    function addImageSlot() {
+      imageCount++;
+      const slotHTML = `
+        <div class="image-upload-slot" data-index="${imageCount}">
+          <div class="relative">
+            <input 
+              type="url" 
+              name="image_${imageCount}" 
+              placeholder="Link hình ảnh ${imageCount}"
+              class="form-input pr-10"
+            />
+            <button 
+              type="button" 
+              class="remove-image-btn absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 hover:text-red-700"
+              onclick="removeImageSlot(${imageCount})"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", slotHTML);
+
+      // Auto add first slot
+      if (imageCount >= 6) {
+        addBtn.style.display = "none";
+      }
+    }
+
+    // Remove image slot function (global)
+    window.removeImageSlot = function (index) {
+      const slot = document.querySelector(`[data-index="${index}"]`);
+      if (slot) {
+        slot.remove();
+        imageCount--;
+        if (imageCount < 6) {
+          addBtn.style.display = "";
+        }
+      }
+    };
+
+    addBtn.addEventListener("click", addImageSlot);
+
+    // Add first slot by default
+    addImageSlot();
+  }
+
+  function handleSubmitResult(taskId, form) {
+    const formData = new FormData(form);
+    const resultLinks = formData.get("resultLinks").trim();
+    const output = formData.get("output").trim();
+    const completion = parseInt(formData.get("completion") || 0);
+
+    if (!resultLinks) {
+      showToast("Vui lòng nhập ít nhất một link kết quả", "error");
+      return;
+    }
+
+    // Collect image links
+    const imageLinks = [];
+    const imageInputs = form.querySelectorAll('input[name^="image_"]');
+    imageInputs.forEach((input) => {
+      const link = input.value.trim();
+      if (link) {
+        imageLinks.push(link);
+      }
+    });
+
+    // Prepare update data
+    const updateData = {
+      [COL.T_RESULT_LINKS]: resultLinks,
+      [COL.T_OUTPUT]: output,
+      [COL.T_COMPLETION]: completion,
+    };
+
+    // Add images to output if any
+    if (imageLinks.length > 0) {
+      const imageSection =
+        "\n\n--- Hình ảnh minh họa ---\n" +
+        imageLinks.map((link, index) => `${index + 1}. ${link}`).join("\n");
+      updateData[COL.T_OUTPUT] = output + imageSection;
+    }
+
+    // Auto update status based on completion
+    if (completion >= 100) {
+      updateData[COL.T_STATUS] = "Hoàn thành";
+      updateData[COL.T_REPORT_DATE] = formatDate(new Date());
+    } else if (completion > 0) {
+      updateData[COL.T_STATUS] = "Đang thực hiện";
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    setButtonLoading(submitBtn, true);
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        setButtonLoading(submitBtn, false);
+        if (response.success) {
+          showToast("Nộp kết quả thành công!", "success");
+          closeModal("submit-result-modal");
+          refreshData(); // Refresh to show updated data
+        } else {
+          showToast(response.error || "Lỗi khi nộp kết quả", "error");
+        }
+      })
+      .withFailureHandler(function (error) {
+        setButtonLoading(submitBtn, false);
+        showToast("Lỗi: " + error.message, "error");
+      })
+      .updateTaskWithAuth(taskId, updateData);
   }
 </script>
