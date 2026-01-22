@@ -1227,12 +1227,12 @@
             </div>
             
             <div class="mt-3">
-                <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
-                    <span>Tiến độ</span>
-                    <span>${taskCompletion}%</span>
+                <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-gray-600">Tiến độ</span>
+                    <span class="${getProgressTextColor(taskCompletion)} font-semibold">${taskCompletion}%</span>
                 </div>
-                <div class="h-1.5 bg-gray-200 rounded-full">
-                    <div class="h-full ${taskStatus.toLowerCase().includes("hoàn thành") ? "bg-green-500" : "bg-blue-500"} rounded-full" style="width: ${taskCompletion}%"></div>
+                <div class="h-2 bg-gray-200 rounded-full">
+                    <div class="h-full ${getProgressGradient(taskCompletion)} rounded-full transition-all duration-300" style="width: ${taskCompletion}%"></div>
                 </div>
             </div>
         </div>
@@ -1488,9 +1488,9 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="text-xs font-medium text-gray-700 min-w-[30px]">${taskCompletion}%</span>
-                <div class="flex-1 h-1.5 bg-gray-200 rounded-full">
-                    <div class="h-full bg-gradient-to-r from-red-400 to-orange-500 rounded-full" style="width: ${taskCompletion}%"></div>
+                <span class="text-xs font-medium min-w-[30px] ${getProgressTextColor(taskCompletion)}">${taskCompletion}%</span>
+                <div class="flex-1 h-2 bg-gray-200 rounded-full">
+                    <div class="h-full ${getProgressGradient(taskCompletion)} rounded-full transition-all duration-300" style="width: ${taskCompletion}%"></div>
                 </div>
             </div>
         </div>
@@ -1782,9 +1782,9 @@
       <td class="px-4 py-4">
         <div class="flex items-center space-x-2">
           <div class="w-16 h-2 bg-gray-200 rounded-full">
-            <div class="h-full bg-blue-500 rounded-full" style="width: ${taskCompletion}%"></div>
+            <div class="h-full ${getProgressColor(taskCompletion)} rounded-full transition-all duration-300" style="width: ${taskCompletion}%"></div>
           </div>
-          <span class="text-sm text-gray-600">${taskCompletion}%</span>
+          <span class="text-sm ${getProgressTextColor(taskCompletion)} font-medium">${taskCompletion}%</span>
         </div>
       </td>
       <td class="px-4 py-4">
@@ -5798,6 +5798,33 @@
     return false;
   }
 
+  // Helper function to get progress color based on completion percentage
+  function getProgressColor(completion) {
+    if (completion === 0) return "bg-gray-300";
+    if (completion < 25) return "bg-red-500";
+    if (completion < 50) return "bg-orange-500";
+    if (completion < 75) return "bg-yellow-500";
+    if (completion < 100) return "bg-green-500";
+    return "bg-green-600";
+  }
+
+  function getProgressGradient(completion) {
+    if (completion === 0) return "bg-gray-300";
+    if (completion < 25) return "bg-gradient-to-r from-red-400 to-red-500";
+    if (completion < 50) return "bg-gradient-to-r from-orange-400 to-orange-500";
+    if (completion < 75) return "bg-gradient-to-r from-yellow-400 to-yellow-500";
+    if (completion < 100) return "bg-gradient-to-r from-green-400 to-green-500";
+    return "bg-gradient-to-r from-green-500 to-green-600";
+  }
+
+  function getProgressTextColor(completion) {
+    if (completion === 0) return "text-gray-600";
+    if (completion < 25) return "text-red-600";
+    if (completion < 50) return "text-orange-600";
+    if (completion < 75) return "text-yellow-600";
+    return "text-green-600";
+  }
+
   function openSubmitResultModal(taskId, taskName) {
     const task = allTasks.find((t) => t[COL.T_ID] === taskId);
     if (!task) {
@@ -5807,6 +5834,7 @@
 
     const currentResultLinks = task[COL.T_RESULT_LINKS] || "";
     const currentOutput = task[COL.T_OUTPUT] || "";
+    console.log("Opening submit result modal for task:", taskId, taskName, task);
 
     const modalHTML = `
       <div id="submit-result-modal" class="modal">
@@ -5825,7 +5853,7 @@
                 name="resultLinks" 
                 class="form-textarea" 
                 rows="4"
-                placeholder="Nhập các link kết quả (mỗi link một dòng)&#10;Ví dụ:&#10;https://drive.google.com/file/...&#10;https://docs.google.com/..."
+                placeholder="Nhập các link kết quả (mỗi link một dòng)"
                 required>${currentResultLinks}</textarea>
               <div class="text-xs text-gray-500 mt-1">Mỗi link trên một dòng</div>
             </div>
@@ -5842,7 +5870,7 @@
             <div class="form-group">
               <label class="form-label">Hình ảnh minh họa</label>
               <div class="space-y-3">
-                <div id="image-upload-container" class="grid grid-cols-2 gap-4">
+                <div id="image-upload-container" class="space-y-3">
                   <!-- Image upload slots will be added here -->
                 </div>
                 <button 
@@ -5852,9 +5880,13 @@
                 >
                   <i class="fas fa-plus mr-2"></i>Thêm hình ảnh
                 </button>
-                <div class="text-xs text-gray-500">
-                  <i class="fas fa-info-circle mr-1"></i>
-                  Chỉ nhập link hình ảnh (Google Drive, imgur, etc.) hoặc base64 image data
+                <div class="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+                  <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                  <div class="space-y-1">
+                    <div><strong>Tùy chọn tải lên:</strong></div>
+                    <div>• <strong>Chọn file:</strong> Tự động chuyển thành Base64</div>
+                    <div>• <strong>Nhập link:</strong> Google Drive, Imgur, hoặc URL hình ảnh khác</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -5862,18 +5894,28 @@
             <div class="form-group">
               <label class="form-label">Cập nhật tiến độ (%)</label>
               <div class="flex items-center space-x-4">
-                <input 
-                  type="range" 
-                  name="completion" 
-                  min="0" 
-                  max="100" 
-                  value="${parseInt(task[COL.T_COMPLETION] || 0)}"
-                  class="flex-1"
-                  id="completion-slider"
-                />
-                <div class="text-lg font-semibold text-blue-600 min-w-[3rem]">
+                <div class="flex-1 relative">
+                  <input 
+                    type="range" 
+                    name="completion" 
+                    min="0" 
+                    max="100" 
+                    value="${parseInt(task[COL.T_COMPLETION] || 0)}"
+                    class="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                    id="completion-slider"
+                    style="background: linear-gradient(to right, #ef4444 0%, #f97316 25%, #eab308 50%, #22c55e 75%, #22c55e 100%); outline: none;"
+                  />
+                </div>
+                <div class="text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border" id="completion-display">
                   <span id="completion-value">${parseInt(task[COL.T_COMPLETION] || 0)}</span>%
                 </div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500 mt-2">
+                <span>0%</span>
+                <span class="text-red-500">25% Bắt đầu</span>
+                <span class="text-orange-500">50% Đang làm</span>
+                <span class="text-yellow-500">75% Sắp xong</span>
+                <span class="text-green-500">100% Hoàn thành</span>
               </div>
             </div>
             
@@ -5893,12 +5935,43 @@
     const modal = document.getElementById("submit-result-modal");
     modal.classList.add("active");
 
-    // Setup completion slider
+    // Setup completion slider with color coding
     const slider = modal.querySelector("#completion-slider");
     const valueDisplay = modal.querySelector("#completion-value");
+    const completionDisplay = modal.querySelector("#completion-display");
+
+    function updateCompletionDisplay(value) {
+      valueDisplay.textContent = value;
+      
+      // Update slider track color
+      const percentage = (value / 100) * 100;
+      slider.style.background = `linear-gradient(to right, 
+        #ef4444 0%, #ef4444 ${Math.min(percentage, 25)}%, 
+        #f97316 25%, #f97316 ${Math.min(percentage, 50)}%, 
+        #eab308 50%, #eab308 ${Math.min(percentage, 75)}%, 
+        #22c55e 75%, #22c55e 100%)`;
+      
+      // Update display colors based on completion percentage
+      if (value === 0) {
+        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-gray-100 text-gray-600";
+      } else if (value < 25) {
+        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-red-50 text-red-600";
+      } else if (value < 50) {
+        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-orange-50 text-orange-600";
+      } else if (value < 75) {
+        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-yellow-50 text-yellow-600";
+      } else if (value < 100) {
+        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-green-50 text-green-600";
+      } else {
+        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-green-100 text-green-700";
+      }
+    }
+
+    // Initialize display
+    updateCompletionDisplay(parseInt(task[COL.T_COMPLETION] || 0));
 
     slider.addEventListener("input", function () {
-      valueDisplay.textContent = this.value;
+      updateCompletionDisplay(parseInt(this.value));
     });
 
     // Setup image upload functionality
@@ -5929,31 +6002,189 @@
     function addImageSlot() {
       imageCount++;
       const slotHTML = `
-        <div class="image-upload-slot" data-index="${imageCount}">
-          <div class="relative">
-            <input 
-              type="url" 
-              name="image_${imageCount}" 
-              placeholder="Link hình ảnh ${imageCount}"
-              class="form-input pr-10"
-            />
+        <div class="image-upload-slot border rounded-lg p-4 space-y-3 bg-gray-50" data-index="${imageCount}">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-gray-700">Hình ảnh ${imageCount}</h4>
             <button 
               type="button" 
-              class="remove-image-btn absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 hover:text-red-700"
+              class="remove-image-btn text-red-500 hover:text-red-700 p-1"
               onclick="removeImageSlot(${imageCount})"
             >
               <i class="fas fa-times"></i>
             </button>
           </div>
+          
+          <div class="space-y-2">
+            <!-- File Upload Option -->
+            <div>
+              <label class="text-sm font-medium text-gray-600 block mb-1">
+                <i class="fas fa-upload mr-2"></i>Chọn file ảnh
+              </label>
+              <div class="relative">
+                <input 
+                  type="file" 
+                  name="image_file_${imageCount}"
+                  accept="image/*"
+                  class="hidden"
+                  id="file-input-${imageCount}"
+                  onchange="handleFileUpload(this, ${imageCount})"
+                />
+                <label 
+                  for="file-input-${imageCount}"
+                  class="cursor-pointer flex items-center justify-center w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                >
+                  <div class="text-center">
+                    <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-1"></i>
+                    <div class="text-sm text-gray-600">Nhấn để chọn ảnh</div>
+                    <div class="text-xs text-gray-500">PNG, JPG, GIF (max 5MB)</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            <div class="text-center text-gray-400 font-medium">- HOẶC -</div>
+            
+            <!-- URL Input Option -->
+            <div>
+              <label class="text-sm font-medium text-gray-600 block mb-1">
+                <i class="fas fa-link mr-2"></i>Nhập link ảnh
+              </label>
+              <input 
+                type="url" 
+                name="image_url_${imageCount}" 
+                placeholder="https://example.com/image.jpg"
+                class="form-input w-full"
+                onchange="handleUrlInput(this, ${imageCount})"
+                onblur="handleUrlInput(this, ${imageCount})"
+              />
+            </div>
+            
+            <!-- Preview Area -->
+            <div id="preview-${imageCount}" class="preview-area hidden">
+              <div class="relative">
+                <img id="preview-img-${imageCount}" class="w-full h-32 object-cover rounded-lg border" alt="Preview">
+                <button 
+                  type="button" 
+                  onclick="clearImagePreview(${imageCount})"
+                  class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+              <div id="image-info-${imageCount}" class="text-xs text-gray-500 mt-1"></div>
+            </div>
+          </div>
         </div>
       `;
       container.insertAdjacentHTML("beforeend", slotHTML);
 
-      // Auto add first slot
-      if (imageCount >= 6) {
+      if (imageCount >= 4) {
         addBtn.style.display = "none";
       }
     }
+
+    // Global functions for handling file upload and preview
+    window.handleFileUpload = function(input, slotIndex) {
+      const file = input.files[0];
+      if (!file) return;
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("File quá lớn! Vui lòng chọn file nhỏ hơn 5MB", "error");
+        input.value = '';
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showToast("Vui lòng chọn file hình ảnh!", "error");
+        input.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        
+        // Clear URL input when file is uploaded
+        const urlInput = document.querySelector(`input[name="image_url_${slotIndex}"]`);
+        if (urlInput) urlInput.value = '';
+        
+        // Show preview
+        showImagePreview(slotIndex, base64Data, `File: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+        
+        // Store base64 data in hidden input
+        let hiddenInput = document.getElementById(`base64-${slotIndex}`);
+        if (!hiddenInput) {
+          hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.id = `base64-${slotIndex}`;
+          hiddenInput.name = `image_base64_${slotIndex}`;
+          input.parentNode.appendChild(hiddenInput);
+        }
+        hiddenInput.value = base64Data;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.handleUrlInput = function(input, slotIndex) {
+      const url = input.value.trim();
+      if (!url) return;
+
+      // Clear file input when URL is entered
+      const fileInput = document.getElementById(`file-input-${slotIndex}`);
+      if (fileInput) fileInput.value = '';
+      
+      // Clear base64 data
+      const hiddenInput = document.getElementById(`base64-${slotIndex}`);
+      if (hiddenInput) hiddenInput.remove();
+
+      // Validate URL format
+      try {
+        new URL(url);
+      } catch {
+        showToast("URL không hợp lệ!", "error");
+        input.value = '';
+        return;
+      }
+
+      // Show preview for valid image URLs
+      if (isImageUrl(url)) {
+        showImagePreview(slotIndex, url, `Link: ${url}`);
+      } else {
+        showToast("Link không phải hình ảnh. Vui lòng sử dụng link trực tiếp đến file ảnh.", "warning");
+      }
+    };
+
+    window.isImageUrl = function(url) {
+      return /\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url) || 
+             url.includes('drive.google.com') || 
+             url.includes('imgur.com') ||
+             url.includes('images') ||
+             url.includes('photo');
+    };
+
+    window.showImagePreview = function(slotIndex, src, info) {
+      const previewArea = document.getElementById(`preview-${slotIndex}`);
+      const previewImg = document.getElementById(`preview-img-${slotIndex}`);
+      const imageInfo = document.getElementById(`image-info-${slotIndex}`);
+      
+      previewImg.src = src;
+      imageInfo.textContent = info;
+      previewArea.classList.remove('hidden');
+    };
+
+    window.clearImagePreview = function(slotIndex) {
+      const previewArea = document.getElementById(`preview-${slotIndex}`);
+      const fileInput = document.getElementById(`file-input-${slotIndex}`);
+      const urlInput = document.querySelector(`input[name="image_url_${slotIndex}"]`);
+      const hiddenInput = document.getElementById(`base64-${slotIndex}`);
+      
+      previewArea.classList.add('hidden');
+      if (fileInput) fileInput.value = '';
+      if (urlInput) urlInput.value = '';
+      if (hiddenInput) hiddenInput.remove();
+    };
 
     // Remove image slot function (global)
     window.removeImageSlot = function (index) {
@@ -5961,7 +6192,7 @@
       if (slot) {
         slot.remove();
         imageCount--;
-        if (imageCount < 6) {
+        if (imageCount < 4) {
           addBtn.style.display = "";
         }
       }
@@ -5984,13 +6215,32 @@
       return;
     }
 
-    // Collect image links
-    const imageLinks = [];
-    const imageInputs = form.querySelectorAll('input[name^="image_"]');
-    imageInputs.forEach((input) => {
-      const link = input.value.trim();
-      if (link) {
-        imageLinks.push(link);
+    // Collect image data (both URLs and base64)
+    const images = [];
+    const imageUrlInputs = form.querySelectorAll('input[name^="image_url_"]');
+    const imageBase64Inputs = form.querySelectorAll('input[name^="image_base64_"]');
+
+    // Process URL images
+    imageUrlInputs.forEach((input, index) => {
+      const url = input.value.trim();
+      if (url) {
+        images.push({
+          type: 'url',
+          data: url,
+          description: `Hình ảnh ${index + 1} (Link)`
+        });
+      }
+    });
+
+    // Process base64 images
+    imageBase64Inputs.forEach((input, index) => {
+      const base64Data = input.value.trim();
+      if (base64Data) {
+        images.push({
+          type: 'base64',
+          data: base64Data,
+          description: `Hình ảnh ${index + 1} (Upload)`
+        });
       }
     });
 
@@ -6002,19 +6252,34 @@
     };
 
     // Add images to output if any
-    if (imageLinks.length > 0) {
-      const imageSection =
-        "\n\n--- Hình ảnh minh họa ---\n" +
-        imageLinks.map((link, index) => `${index + 1}. ${link}`).join("\n");
+    if (images.length > 0) {
+      let imageSection = "\n\n=== HÌNH ẢNH MINH HỌA ===\n";
+      images.forEach((image, index) => {
+        if (image.type === 'url') {
+          imageSection += `${index + 1}. ${image.description}: ${image.data}\n`;
+        } else if (image.type === 'base64') {
+          // For base64, we'll store just the first 100 chars as reference
+          const preview = image.data.substring(0, 100) + "...";
+          imageSection += `${index + 1}. ${image.description}: [Base64 Image Data]\n`;
+          imageSection += `   Preview: ${preview}\n`;
+        }
+      });
       updateData[COL.T_OUTPUT] = output + imageSection;
+      
+      // Store images separately if needed for future processing
+      updateData[COL.T_IMAGES] = JSON.stringify(images);
     }
 
-    // Auto update status based on completion
+    // Auto update status based on completion with enhanced logic
     if (completion >= 100) {
       updateData[COL.T_STATUS] = "Hoàn thành";
       updateData[COL.T_REPORT_DATE] = formatDate(new Date());
-    } else if (completion > 0) {
+    } else if (completion >= 75) {
+      updateData[COL.T_STATUS] = "Gần hoàn thành";
+    } else if (completion >= 25) {
       updateData[COL.T_STATUS] = "Đang thực hiện";
+    } else if (completion > 0) {
+      updateData[COL.T_STATUS] = "Bắt đầu";
     }
 
     const submitBtn = form.querySelector('button[type="submit"]');
