@@ -327,6 +327,23 @@
             `Đã cập nhật trạng thái thành "${mappedStatus}"`,
             "success",
           );
+          // Update the task in local data first
+          const taskIndex = allTasks.findIndex((t) => t[COL.T_ID] === taskId);
+          if (taskIndex !== -1) {
+            allTasks[taskIndex][COL.T_STATUS] = mappedStatus;
+            allTasks[taskIndex][COL.T_COMPLETION] = updateData.completion;
+            if (updateData.reportDate) {
+              allTasks[taskIndex][COL.T_REPORT_DATE] = updateData.reportDate;
+            }
+          }
+
+          // Re-render calendar to show updated positions
+          renderCalendarView();
+          setTimeout(() => {
+            setupCalendarDragDrop();
+          }, 100);
+
+          // Also refresh global data for other views
           refreshData();
         } else {
           showToast(response.error || "Lỗi khi cập nhật trạng thái", "error");
