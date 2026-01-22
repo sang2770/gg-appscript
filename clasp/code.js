@@ -22,6 +22,8 @@ const TASK_TARGET_COLUMN_NAME = "Mục tiêu";
 const TASK_RESULT_LINKS_COLUMN_NAME = "Link kết quả";
 const TASK_OUTPUT_COLUMN_NAME = "Kết quả đầu ra";
 const TASK_NOTES_COLUMN_NAME = "Ghi chú";
+const TASK_IMAGES_COLUMN_NAME = "Hình ảnh";
+const RAW_DATA = "Dữ liệu thô";
 
 // === Cột sheet "Dự án" ===
 const PROJECT_ID_COLUMN_NAME = "Mã dự án";
@@ -1328,6 +1330,7 @@ function addTask(taskData) {
     newTask[TASK_NOTES_COLUMN_NAME] = taskData.notes
       ? String(taskData.notes).trim()
       : "";
+    newTask[RAW_DATA] = taskData || {};
 
     // Thêm vào danh sách
     currentTasks.push(newTask);
@@ -1569,6 +1572,7 @@ function updateTask(taskId, taskData) {
       ? String(taskData.notes).trim()
       : "";
 
+    updatedTask[TASK_IMAGES_COLUMN_NAME] = taskData.images || [];
     projectSheet
       .getRange(oldProjectRow, jsonColIndex + 1)
       .setValue(formatJSONCompact(oldTasks));
