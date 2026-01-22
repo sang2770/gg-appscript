@@ -1,16 +1,18 @@
 <script>
   // === CALENDAR VIEW FUNCTIONS ===
 
-  function renderCalendarView() {
+  let selectedDate = new Date(); // Default to today
+
+  function renderCalendarView(targetDate = null) {
     const container = document.getElementById("calendar-view");
     if (!container) return;
 
-    // Get today's date
-    const today = new Date();
-    const todayString = formatDateToISOString(today);
+    // Use provided date or selectedDate
+    const currentDate = targetDate || selectedDate;
+    const currentDateString = formatDateToISOString(currentDate);
 
-    // Filter tasks that are due today or have start date today
-    const todayTasks = allTasks.filter((task) => {
+    // Filter tasks that are due on selected date or have start date on selected date
+    const dateTasks = allTasks.filter((task) => {
       const dueDate = task[COL.T_DUE];
       const startDate = task[COL.T_START];
 
@@ -23,7 +25,10 @@
         ? formatDateToISOString(new Date(startDate))
         : null;
 
-      return dueDateString === todayString || startDateString === todayString;
+      return (
+        dueDateString === currentDateString ||
+        startDateString === currentDateString
+      );
     });
 
     // Organize tasks by status
@@ -34,7 +39,7 @@
       "Hoàn thành": [],
     };
 
-    todayTasks.forEach((task) => {
+    dateTasks.forEach((task) => {
       const status = task[COL.T_STATUS] || "Chưa bắt đầu";
 
       if (status.toLowerCase().includes("hoàn thành")) {
@@ -48,13 +53,31 @@
       }
     });
 
+    // Check if selected date is today
+    const today = new Date();
+    const isToday =
+      formatDateToISOString(currentDate) === formatDateToISOString(today);
+    const dateLabel = isToday ? "Hôm nay" : formatDateForDisplay(currentDate);
+
     container.innerHTML = `
       <div class="calendar-header mb-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Quản lý Nhiệm vụ Hôm nay</h2>
-          <div class="text-lg text-gray-600">
-            ${formatDateForDisplay(today)} - ${getDayOfWeek(today)}
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold text-gray-900">Quản lý Nhiệm vụ - ${dateLabel}</h2>
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <label class="text-sm font-medium text-gray-700">Chọn ngày:</label>
+              <input type="date" 
+                     id="calendar-date-picker" 
+                     value="${formatDateToISOString(currentDate)}"
+                     class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            </div>
+            <button id="today-btn" class="btn-secondary text-sm px-3 py-2">
+              <i class="fas fa-calendar-day mr-1"></i>Hôm nay
+            </button>
           </div>
+        </div>
+        <div class="text-lg text-gray-600 mb-4">
+          ${formatDateForDisplay(currentDate)} - ${getDayOfWeek(currentDate)}
         </div>
         <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="text-center p-3 bg-gray-50 rounded-lg">
@@ -113,29 +136,33 @@
     const taskCompletion = parseInt(task[COL.T_COMPLETION] || 0);
     const taskProjectId = task[COL.T_PID];
 
-    // Check if task is due today
-    const today = new Date();
-    const todayString = formatDateToISOString(today);
-    const isDueToday =
+    // Check if task is due on selected date
+    const selectedDateString = formatDateToISOString(selectedDate);
+    const isDueOnSelectedDate =
       taskDueDate &&
-      formatDateToISOString(new Date(taskDueDate)) === todayString;
-    const isStartToday =
+      formatDateToISOString(new Date(taskDueDate)) === selectedDateString;
+    const isStartOnSelectedDate =
       taskStartDate &&
-      formatDateToISOString(new Date(taskStartDate)) === todayString;
+      formatDateToISOString(new Date(taskStartDate)) === selectedDateString;
 
     // Find project info
     const project = allProjects.find((p) => p[COL.P_ID] === taskProjectId);
     const projectName = project ? project[COL.P_NAME] : taskProjectId;
 
     const priorityClass = getPriorityClass(taskPriority);
-    const isHighlighted = isDueToday || isStartToday;
+    const isHighlighted = isDueOnSelectedDate || isStartOnSelectedDate;
+
+    // Check if selected date is today for highlighting
+    const today = new Date();
+    const isSelectedDateToday =
+      formatDateToISOString(selectedDate) === formatDateToISOString(today);
 
     return `
       <div class="task-card bg-white rounded-lg shadow-sm border hover:shadow-md transition-all duration-200 p-4 cursor-pointer task-clickable ${isHighlighted ? "ring-2 ring-orange-400 border-orange-300 bg-orange-50" : ""}" 
            data-id="${taskId}"
            draggable="true">
         
-        ${isHighlighted ? '<div class="flex items-center text-orange-600 text-xs font-medium mb-2"><i class="fas fa-exclamation-circle mr-1"></i>Hạn hôm nay</div>' : ""}
+        ${isHighlighted ? `<div class="flex items-center text-orange-600 text-xs font-medium mb-2"><i class="fas fa-exclamation-circle mr-1"></i>${isSelectedDateToday ? "Hạn hôm nay" : "Hạn ngày này"}</div>` : ""}
         
         <div class="task-header mb-3">
           <h4 class="font-medium text-gray-900 text-sm leading-tight mb-1">${taskName}</h4>
@@ -341,6 +368,7 @@
           renderCalendarView();
           setTimeout(() => {
             setupCalendarDragDrop();
+            setupDatePicker();
           }, 100);
 
           // Also refresh global data for other views
@@ -356,11 +384,40 @@
       .updateTaskWithAuth(taskId, updateData);
   }
 
+  // Handle date selection
+  function handleDateChange(newDate) {
+    selectedDate = new Date(newDate);
+    renderCalendarView();
+    setTimeout(() => {
+      setupCalendarDragDrop();
+      setupDatePicker();
+    }, 100);
+  }
+
+  // Setup date picker event listeners
+  function setupDatePicker() {
+    const datePicker = document.getElementById("calendar-date-picker");
+    const todayBtn = document.getElementById("today-btn");
+
+    if (datePicker) {
+      datePicker.addEventListener("change", (e) => {
+        handleDateChange(e.target.value);
+      });
+    }
+
+    if (todayBtn) {
+      todayBtn.addEventListener("click", () => {
+        handleDateChange(new Date());
+      });
+    }
+  }
+
   // Initialize calendar view when called
   function initializeCalendar() {
     renderCalendarView();
     setTimeout(() => {
       setupCalendarDragDrop();
+      setupDatePicker();
     }, 100);
   }
 </script>
