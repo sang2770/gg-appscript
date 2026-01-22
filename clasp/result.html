@@ -274,19 +274,23 @@
     // Initialize display
     updateCompletionDisplay(parseInt(task[COL.T_COMPLETION] || 0));
 
-    slider.addEventListener("input", function () {
-      updateCompletionDisplay(parseInt(this.value));
-    });
+    if (slider) {
+      slider.addEventListener("input", function () {
+        updateCompletionDisplay(parseInt(this.value));
+      });
+    }
 
     // Setup image upload functionality
     setupImageUpload();
 
     // Setup form submission
     const form = modal.querySelector("#submit-result-form");
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      handleSubmitResult(taskId, task, form);
-    });
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        handleSubmitResult(taskId, task, form);
+      });
+    }
 
     // Setup close handlers
     const closeButtons = modal.querySelectorAll(".close-modal");
@@ -531,13 +535,15 @@
       if (slot) {
         slot.remove();
         imageCount--;
-        if (imageCount < 4) {
+        if (imageCount < 4 && addBtn) {
           addBtn.style.display = "";
         }
       }
     };
 
-    addBtn.addEventListener("click", addImageSlot);
+    if (addBtn) {
+      addBtn.addEventListener("click", addImageSlot);
+    }
 
     // Add first slot by default
     addImageSlot();

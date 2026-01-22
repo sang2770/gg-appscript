@@ -1211,10 +1211,18 @@
                             project[COL.P_MANAGER] === currentUser.name;
                           const canCopyDelete = isAdmin() || isProjectManager;
 
+                          // Kiểm tra xem có nên hiển thị nút nộp kết quả hay không
+                          const taskIsOverdue = isTaskOverdue(task[COL.T_DUE]);
+                          const canSubmitResult = taskIsOverdue
+                            ? canUserSubmitResultForOverdueTask(taskId)
+                            : isAdmin() ||
+                              isProjectManager ||
+                              task[COL.T_ASSIGNEE] === currentUser.name;
+
                           return `
-                            <button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
+                            ${canSubmitResult ? `<button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>` : ""}
                             ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
-                            <button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
+                            ${canSubmitResult ? `<button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>` : ""}
                             ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
                           `;
                         })()}
@@ -1721,6 +1729,8 @@
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ưu tiên</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tiến độ</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link kết quả</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Điểm</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link ảnh</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày bắt đầu</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hạn chót</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Thao tác</th>
@@ -1747,6 +1757,8 @@
     const taskStartDate = formatDateForDisplay(task[COL.T_START]);
     const taskDueDate = formatDateForDisplay(task[COL.T_DUE]);
     const taskCompletion = parseInt(task[COL.T_COMPLETION] || 0);
+    const taskScore = task[COL.T_SCORE] || "";
+    const taskImages = task[COL.T_IMAGES] || [];
     const taskProjectId = task[COL.T_PID]; // Lấy Project ID
 
     const statusClass = getStatusClass(taskStatus);
@@ -1807,6 +1819,26 @@
           }
         </div>
       </td>
+      <td class="px-4 py-4 text-center">
+        ${taskScore ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${taskScore}/100</span>` : '<span class="text-gray-400 text-xs">Chưa chấm</span>'}
+      </td>
+      <td class="px-4 py-4">
+        <div class="text-sm">
+          ${
+            taskImages.length > 0
+              ? `<div class="flex flex-wrap gap-1">${taskImages
+                  .slice(0, 2)
+                  .map(
+                    (img, index) =>
+                      `<a href="${img.data}" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs" title="${img.description || `Hình ${index + 1}`}"><i class="fas fa-image mr-1"></i>Hình ${index + 1}</a>`,
+                  )
+                  .join(
+                    "",
+                  )}${taskImages.length > 2 ? `<span class="text-gray-500 text-xs">+${taskImages.length - 2} ảnh</span>` : ""}</div>`
+              : '<span class="text-gray-400 text-xs">Chưa có</span>'
+          }
+        </div>
+      </td>
       <td class="px-4 py-4 text-sm text-gray-900">${taskStartDate}</td>
       <td class="px-4 py-4 text-sm text-gray-900">${taskDueDate}</td>
       <td class="px-4 py-4 text-right">
@@ -1819,10 +1851,18 @@
               project && project[COL.P_MANAGER] === currentUser.name;
             const canCopyDelete = isAdmin() || isProjectManager;
 
+            // Kiểm tra xem có nên hiển thị nút nộp kết quả hay không
+            const taskIsOverdue = isTaskOverdue(task[COL.T_DUE]);
+            const canSubmitResult = taskIsOverdue
+              ? canUserSubmitResultForOverdueTask(taskId)
+              : isAdmin() ||
+                isProjectManager ||
+                task[COL.T_ASSIGNEE] === currentUser.name;
+
             return `
-              <button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
+              ${canSubmitResult ? `<button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>` : ""}
               ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
-              <button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
+              ${canSubmitResult ? `<button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>` : ""}
               ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
             `;
           })()}
@@ -3329,6 +3369,21 @@
     }
   }
 
+  function canUserSubmitResultForOverdueTask(taskId) {
+    // Admin có thể nộp kết quả cho tất cả task, kể cả quá hạn
+    if (isAdmin()) return true;
+
+    const task = allTasks.find((t) => t[COL.T_ID] === taskId);
+    if (!task) return false;
+
+    // Người quản lý dự án có thể nộp kết quả cho task quá hạn
+    const project = allProjects.find((p) => p[COL.P_ID] === task[COL.T_PID]);
+    if (project && project[COL.P_MANAGER] === currentUser.name) return true;
+
+    // Người được giao nhiệm vụ KHÔNG thể nộp kết quả cho task quá hạn
+    return false;
+  }
+
   function formatDateForDisplay(dateInput, includeTime = false) {
     if (!dateInput) return "N/A";
     try {
@@ -3819,10 +3874,19 @@
                             project &&
                             project[COL.P_MANAGER] === currentUser.name;
                           const canCopyDelete = isAdmin() || isProjectManager;
+
+                          // Kiểm tra xem có nên hiển thị nút nộp kết quả hay không
+                          const taskIsOverdue = isTaskOverdue(task[COL.T_DUE]);
+                          const canSubmitResult = taskIsOverdue
+                            ? canUserSubmitResultForOverdueTask(task[COL.T_ID])
+                            : isAdmin() ||
+                              isProjectManager ||
+                              task[COL.T_ASSIGNEE] === currentUser.name;
+
                           return `
-                            <button class="action-btn action-btn-view submit-result-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
+                            ${canSubmitResult ? `<button class="action-btn action-btn-view submit-result-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>` : ""}
                             ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
-                            <button class="action-btn action-btn-edit edit-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
+                            ${canSubmitResult ? `<button class="action-btn action-btn-edit edit-btn mr-1" data-type="task" data-id="${task[COL.T_ID]}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>` : ""}
                             ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${task[COL.T_NAME]}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
                             `;
                         })()}
@@ -4427,10 +4491,18 @@
                   project && project[COL.P_MANAGER] === currentUser.name;
                 const canCopyDelete = isAdmin() || isProjectManager;
 
+                // Kiểm tra xem có nên hiển thị nút nộp kết quả hay không
+                const taskIsOverdue = isTaskOverdue(task[COL.T_DUE]);
+                const canSubmitResult = taskIsOverdue
+                  ? canUserSubmitResultForOverdueTask(task[COL.T_ID])
+                  : isAdmin() ||
+                    isProjectManager ||
+                    task[COL.T_ASSIGNEE] === currentUser.name;
+
                 return `
-                  <button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>
+                  ${canSubmitResult ? `<button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload"></i></button>` : ""}
                   ${canCopyDelete ? `<button class="action-btn action-btn-copy copy-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Tạo bản sao"><i class="fas fa-copy"></i></button>` : ""}
-                  <button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${task[COL.T_ID]}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
+                  ${canSubmitResult ? `<button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${task[COL.T_ID]}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>` : ""}
                   ${canCopyDelete ? `<button class="action-btn action-btn-delete delete-btn" data-type="task" data-id="${task[COL.T_ID]}" data-name="${taskName}" title="Xóa"><i class="fas fa-trash"></i></button>` : ""}
                 `;
               })()}
