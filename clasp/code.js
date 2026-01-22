@@ -23,6 +23,7 @@ const TASK_RESULT_LINKS_COLUMN_NAME = "Link kết quả";
 const TASK_OUTPUT_COLUMN_NAME = "Kết quả đầu ra";
 const TASK_NOTES_COLUMN_NAME = "Ghi chú";
 const TASK_IMAGES_COLUMN_NAME = "Hình ảnh";
+const TASK_SCORE_COLUMN_NAME = "Điểm";
 const RAW_DATA = "Dữ liệu thô";
 
 // === Cột sheet "Dự án" ===
@@ -1330,6 +1331,9 @@ function addTask(taskData) {
     newTask[TASK_NOTES_COLUMN_NAME] = taskData.notes
       ? String(taskData.notes).trim()
       : "";
+    newTask[TASK_SCORE_COLUMN_NAME] = taskData.score
+      ? parseFloat(taskData.score)
+      : null;
     newTask[RAW_DATA] = taskData || {};
 
     // Thêm vào danh sách
@@ -1571,6 +1575,9 @@ function updateTask(taskId, taskData) {
     updatedTask[TASK_NOTES_COLUMN_NAME] = taskData.notes
       ? String(taskData.notes).trim()
       : "";
+    updatedTask[TASK_SCORE_COLUMN_NAME] = taskData.score
+      ? parseFloat(taskData.score) 
+      : null;
 
     updatedTask[TASK_IMAGES_COLUMN_NAME] = taskData.images || [];
     projectSheet
@@ -3040,6 +3047,90 @@ function reorderTasks(projectId, orderedTaskIds) {
   }
 }
 
+/**
+ * Submit score for a task
+ */
+function submitTaskScore(taskId, score) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    
+    const projectsData = getProjectData();
+    if (!projectsData) {
+      return { success: false, error: "Không thể tải dữ liệu dự án" };
+    }
+    
+    const { sheet: projectSheet, headers: projectHeaders } = projectsData;
+    const jsonColIndex = projectHeaders.indexOf(PROJECT_TASKS_JSON_COLUMN_NAME);
+    
+    if (jsonColIndex === -1) {
+      return { success: false, error: "Không tìm thấy cột JSON trong sheet" };
+    }
+
+    // Find the task in all projects
+    let targetProjectRow = -1;
+    let targetTaskIndex = -1;
+    let projectTasks = null;
+
+    const dataRange = projectSheet.getDataRange();
+    const data = dataRange.getValues();
+
+    for (let i = 1; i < data.length; i++) {
+      const tasksJSON = data[i][jsonColIndex];
+      if (!tasksJSON) continue;
+
+      try {
+        const tasks = JSON.parse(tasksJSON);
+        const taskIndex = tasks.findIndex(task => task[TASK_ID_COLUMN_NAME] === taskId);
+        
+        if (taskIndex !== -1) {
+          targetProjectRow = i + 1; // Convert to 1-based index
+          targetTaskIndex = taskIndex;
+          projectTasks = tasks;
+          break;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    if (targetProjectRow === -1 || !projectTasks) {
+      return { success: false, error: "Không tìm thấy nhiệm vụ" };
+    }
+
+    // Validate score
+    const numScore = parseFloat(score);
+    if (isNaN(numScore) || numScore < 0 || numScore > 100) {
+      return { success: false, error: "Điểm phải từ 0 đến 100" };
+    }
+
+    // Update the task score
+    projectTasks[targetTaskIndex][TASK_SCORE_COLUMN_NAME] = numScore;
+
+    // Save the updated tasks back to the sheet
+    projectSheet.getRange(targetProjectRow, jsonColIndex + 1).setValue(formatJSONCompact(projectTasks));
+    SpreadsheetApp.flush();
+
+    // Log the activity
+    const taskName = projectTasks[targetTaskIndex][TASK_NAME_COLUMN_NAME] || "Nhiệm vụ";
+    const projectId = data[targetProjectRow - 1][projectHeaders.indexOf(PROJECT_ID_COLUMN_NAME)];
+    
+    logActivity(
+      "Chấm điểm nhiệm vụ",
+      `Nhiệm vụ: ${taskName}, Điểm: ${numScore}`,
+      projectId
+    );
+
+    return { success: true };
+    
+  } catch (e) {
+    console.error("Error submitting task score:", e);
+    return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function getOrCreateDriveFolder(folderName) {
   const rootFolder = DriveApp.getRootFolder();
   const folders = rootFolder.getFoldersByName(folderName);
@@ -3060,7 +3151,7 @@ function uploadImageToDrive(imageData, fileName) {
       "",
     );
     const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, fileName);
-
+    const IMAGE_FOLDER_NAME = "ProjectManagementImages";
     const folder = getOrCreateDriveFolder(IMAGE_FOLDER_NAME);
     const file = folder.createFile(blob);
     return { success: true, url: file.getUrl() };

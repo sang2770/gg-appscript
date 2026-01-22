@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Deploy App",
+			"type": "shell",
+			"command": "clasp push",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

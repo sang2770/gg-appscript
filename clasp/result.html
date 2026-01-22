@@ -56,7 +56,7 @@
     }
 
     const currentResultLinks = task[COL.T_RESULT_LINKS] || "";
-    const existingImages = task[COL.T_IMAGES] ? JSON.parse(task[COL.T_IMAGES]) : [];
+    const existingImages = task[COL.T_IMAGES] || [];
 
     // Check if the task is overdue
     const dueDate = new Date(task[COL.T_DUE]);
@@ -378,7 +378,7 @@
 
       const reader = new FileReader();
       reader.onload = function (e) {
-        const base64Data = e.target.result.split(',')[1]; // Extract Base64 data
+        const base64Data = e.target.result; // Extract Base64 data
 
         // Clear URL input when file is uploaded
         const urlInput = document.querySelector(`input[name="image_url_${slotIndex}"]`);
@@ -389,17 +389,22 @@
 
         // Call Google Apps Script function to upload image
         google.script.run
-          .withSuccessHandler(function (driveLink) {
+          .withSuccessHandler(function (response) {
+            if (!response || !response.url) {
+              showToast("Lỗi khi tải ảnh lên!" + JSON.stringify(response), "error");
+              return;
+            }
+            driveLink = response.url;
             // Show preview
             showImagePreview(slotIndex, driveLink, `File: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
 
             // Store the Drive link in a hidden input
-            let hiddenInput = document.getElementById(`drive-link-${slotIndex}`);
+            let hiddenInput = document.getElementById(`image_url_${slotIndex}`);
             if (!hiddenInput) {
               hiddenInput = document.createElement('input');
               hiddenInput.type = 'hidden';
-              hiddenInput.id = `drive-link-${slotIndex}`;
-              hiddenInput.name = `image_drive_link_${slotIndex}`;
+              hiddenInput.id = `image_url_${slotIndex}`;
+              hiddenInput.name = `image_url_${slotIndex}`;
               input.parentNode.appendChild(hiddenInput);
             }
             hiddenInput.value = driveLink;
@@ -640,7 +645,7 @@
       notes: task[COL.T_NOTES] || "",
       resultLinks: resultLinks,
       completion: completion,
-      images: JSON.stringify(allImages)
+      images: allImages
     };
 
     // Auto update status based on completion with enhanced logic
