@@ -1,6 +1,4 @@
 <script>
-
-
   // === SUBMIT RESULT FUNCTIONS ===
 
   function canUserSubmitResult(taskId) {
@@ -34,8 +32,10 @@
   function getProgressGradient(completion) {
     if (completion === 0) return "bg-gray-300";
     if (completion < 25) return "bg-gradient-to-r from-red-400 to-red-500";
-    if (completion < 50) return "bg-gradient-to-r from-orange-400 to-orange-500";
-    if (completion < 75) return "bg-gradient-to-r from-yellow-400 to-yellow-500";
+    if (completion < 50)
+      return "bg-gradient-to-r from-orange-400 to-orange-500";
+    if (completion < 75)
+      return "bg-gradient-to-r from-yellow-400 to-yellow-500";
     if (completion < 100) return "bg-gradient-to-r from-green-400 to-green-500";
     return "bg-gradient-to-r from-green-500 to-green-600";
   }
@@ -63,16 +63,18 @@
     const today = new Date();
     const isOverdue = dueDate < today;
 
-    let existingImagesHTML = '';
+    let existingImagesHTML = "";
     if (existingImages && existingImages.length > 0) {
       existingImagesHTML = `
         <div class="mb-4 existing-images-container">
           <h4 class="text-sm font-medium text-gray-700 mb-3">Hình ảnh hiện có:</h4>
           <div class="grid grid-cols-2 gap-3">
-            ${existingImages.map((img, index) => `
+            ${existingImages
+              .map(
+                (img, index) => `
               <div class="existing-image-item border rounded-lg p-2 bg-white">
                 <div class="relative">
-                  <img src="${img.type === 'base64' ? img.data : img.data}" 
+                  <img src="${img.type === "base64" ? img.data : img.data}" 
                        class="w-full h-24 object-cover rounded border" 
                        alt="Existing image ${index + 1}"
                        onclick="viewImageFullSize('${img.data.replace(/'/g, "\\'")}', '${img.description}')"
@@ -87,7 +89,9 @@
                 </div>
                 <p class="text-xs text-gray-500 mt-1 truncate">${img.description || `Hình ảnh ${index + 1}`}</p>
               </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         </div>
       `;
@@ -102,7 +106,7 @@
             </button>
           </div>
           
-          <form id="submit-result-form" class="space-y-6" ${isOverdue ? 'style="pointer-events: none; opacity: 0.6;"' : ''}>
+          <form id="submit-result-form" class="space-y-6">
             <div class="form-group">
               <label class="form-label required">Link kết quả</label>
               <textarea 
@@ -110,7 +114,8 @@
                 class="form-textarea" 
                 rows="4"
                 placeholder="Nhập các link kết quả (mỗi link một dòng)"
-                required>${currentResultLinks}</textarea>
+                ${isOverdue ? "disabled" : ""}
+                >${currentResultLinks}</textarea>
               <div class="text-xs text-gray-500 mt-1">Mỗi link trên một dòng</div>
             </div>
             <div class="form-group">
@@ -120,13 +125,21 @@
                 <div id="image-upload-container" class="space-y-3">
                   <!-- Image upload slots will be added here -->
                 </div>
-                <button 
+                 ${
+                   isOverdue
+                     ? ""
+                     : `
+                  <button 
                   type="button" 
                   id="add-image-btn"
                   class="btn-secondary w-full"
+                 
                 >
                   <i class="fas fa-plus mr-2"></i>Thêm hình ảnh mới
                 </button>
+                 `
+                 }
+               
                 <div class="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
                   <i class="fas fa-info-circle mr-2 text-blue-500"></i>
                   <div class="space-y-1">
@@ -151,6 +164,7 @@
                     class="w-full h-3 rounded-lg appearance-none cursor-pointer"
                     id="completion-slider"
                     style="background: linear-gradient(to right, #ef4444 0%, #f97316 25%, #eab308 50%, #22c55e 75%, #22c55e 100%); outline: none;"
+                    ${isOverdue ? "disabled" : ""}
                   />
                 </div>
                 <div class="text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border" id="completion-display">
@@ -166,7 +180,9 @@
               </div>
             </div>
 
-            ${isAdmin() || isManager() ? `
+            ${
+              isAdmin() || isManager()
+                ? `
             <div class="form-group">
               <label class="form-label">Chấm điểm</label>
               <div class="flex items-center space-x-4">
@@ -175,28 +191,36 @@
                   name="score" 
                   min="0" 
                   max="100" 
+                  value="${task[COL.T_SCORE] || ""}"
                   placeholder="Nhập điểm (0-100)"
                   class="form-input w-full"
                 />
                 <button 
                   type="button" 
                   class="btn-primary"
-                  onclick="submitScore(${taskId})"
+                  onclick="submitScore('${taskId}')"
                 >
                   <i class="fas fa-check mr-2"></i>Chấm điểm
                 </button>
               </div>
             </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <div class="flex justify-end space-x-3">
               <button type="button" class="btn-secondary close-modal">Hủy</button>
-              <button type="submit" class="btn-primary" ${isOverdue ? 'disabled' : ''}>
+              ${
+                isOverdue
+                  ? ""
+                  : `<button type="submit" class="btn-primary">
                 <i class="fas fa-upload mr-2"></i>Nộp kết quả
-              </button>
+              </button>`
+              }
+              
             </div>
           </form>
-          ${isOverdue ? '<div class="text-red-500 text-sm mt-4">Nhiệm vụ đã quá hạn, không thể nộp kết quả.</div>' : ''}
+          ${isOverdue ? '<div class="text-red-500 text-sm mt-4 bg-red-50 p-3 rounded-lg border border-red-200"><i class="fas fa-exclamation-triangle mr-2"></i>Nhiệm vụ đã quá hạn, không thể nộp kết quả. Tuy nhiên, vẫn có thể chấm điểm.</div>' : ""}
         </div>
       </div>
     `;
@@ -227,17 +251,23 @@
 
       // Update display colors based on completion percentage
       if (value === 0) {
-        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-gray-100 text-gray-600";
+        completionDisplay.className =
+          "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-gray-100 text-gray-600";
       } else if (value < 25) {
-        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-red-50 text-red-600";
+        completionDisplay.className =
+          "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-red-50 text-red-600";
       } else if (value < 50) {
-        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-orange-50 text-orange-600";
+        completionDisplay.className =
+          "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-orange-50 text-orange-600";
       } else if (value < 75) {
-        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-yellow-50 text-yellow-600";
+        completionDisplay.className =
+          "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-yellow-50 text-yellow-600";
       } else if (value < 100) {
-        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-green-50 text-green-600";
+        completionDisplay.className =
+          "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-green-50 text-green-600";
       } else {
-        completionDisplay.className = "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-green-100 text-green-700";
+        completionDisplay.className =
+          "text-lg font-semibold min-w-[4rem] px-3 py-2 rounded-lg shadow-sm border bg-green-100 text-green-700";
       }
     }
 
@@ -271,6 +301,7 @@
   function setupImageUpload() {
     const container = document.getElementById("image-upload-container");
     const addBtn = document.getElementById("add-image-btn");
+    if (!container || !addBtn) return;
     let imageCount = 0;
 
     function addImageSlot() {
@@ -365,14 +396,14 @@
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         showToast("File quá lớn! Vui lòng chọn file nhỏ hơn 5MB", "error");
-        input.value = '';
+        input.value = "";
         return;
       }
 
       // Validate file type
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         showToast("Vui lòng chọn file hình ảnh!", "error");
-        input.value = '';
+        input.value = "";
         return;
       }
 
@@ -381,8 +412,10 @@
         const base64Data = e.target.result; // Extract Base64 data
 
         // Clear URL input when file is uploaded
-        const urlInput = document.querySelector(`input[name="image_url_${slotIndex}"]`);
-        if (urlInput) urlInput.value = '';
+        const urlInput = document.querySelector(
+          `input[name="image_url_${slotIndex}"]`,
+        );
+        if (urlInput) urlInput.value = "";
 
         // Show loading indicator
         showToast("Đang tải ảnh lên Google Drive...", "info");
@@ -391,18 +424,25 @@
         google.script.run
           .withSuccessHandler(function (response) {
             if (!response || !response.url) {
-              showToast("Lỗi khi tải ảnh lên!" + JSON.stringify(response), "error");
+              showToast(
+                "Lỗi khi tải ảnh lên!" + JSON.stringify(response),
+                "error",
+              );
               return;
             }
             driveLink = response.url;
             // Show preview
-            showImagePreview(slotIndex, driveLink, `File: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+            showImagePreview(
+              slotIndex,
+              driveLink,
+              `File: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`,
+            );
 
             // Store the Drive link in a hidden input
             let hiddenInput = document.getElementById(`image_url_${slotIndex}`);
             if (!hiddenInput) {
-              hiddenInput = document.createElement('input');
-              hiddenInput.type = 'hidden';
+              hiddenInput = document.createElement("input");
+              hiddenInput.type = "hidden";
               hiddenInput.id = `image_url_${slotIndex}`;
               hiddenInput.name = `image_url_${slotIndex}`;
               input.parentNode.appendChild(hiddenInput);
@@ -425,7 +465,7 @@
 
       // Clear file input when URL is entered
       const fileInput = document.getElementById(`file-input-${slotIndex}`);
-      if (fileInput) fileInput.value = '';
+      if (fileInput) fileInput.value = "";
 
       // Clear base64 data
       const hiddenInput = document.getElementById(`base64-${slotIndex}`);
@@ -436,7 +476,7 @@
         new URL(url);
       } catch {
         showToast("URL không hợp lệ!", "error");
-        input.value = '';
+        input.value = "";
         return;
       }
 
@@ -444,16 +484,21 @@
       if (isImageUrl(url)) {
         showImagePreview(slotIndex, url, `Link: ${url}`);
       } else {
-        showToast("Link không phải hình ảnh. Vui lòng sử dụng link trực tiếp đến file ảnh.", "warning");
+        showToast(
+          "Link không phải hình ảnh. Vui lòng sử dụng link trực tiếp đến file ảnh.",
+          "warning",
+        );
       }
     };
 
     window.isImageUrl = function (url) {
-      return /\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url) ||
-        url.includes('drive.google.com') ||
-        url.includes('imgur.com') ||
-        url.includes('images') ||
-        url.includes('photo');
+      return (
+        /\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url) ||
+        url.includes("drive.google.com") ||
+        url.includes("imgur.com") ||
+        url.includes("images") ||
+        url.includes("photo")
+      );
     };
 
     window.showImagePreview = function (slotIndex, src, info) {
@@ -463,18 +508,20 @@
 
       previewImg.src = src;
       imageInfo.textContent = info;
-      previewArea.classList.remove('hidden');
+      previewArea.classList.remove("hidden");
     };
 
     window.clearImagePreview = function (slotIndex) {
       const previewArea = document.getElementById(`preview-${slotIndex}`);
       const fileInput = document.getElementById(`file-input-${slotIndex}`);
-      const urlInput = document.querySelector(`input[name="image_url_${slotIndex}"]`);
+      const urlInput = document.querySelector(
+        `input[name="image_url_${slotIndex}"]`,
+      );
       const hiddenInput = document.getElementById(`base64-${slotIndex}`);
 
-      previewArea.classList.add('hidden');
-      if (fileInput) fileInput.value = '';
-      if (urlInput) urlInput.value = '';
+      previewArea.classList.add("hidden");
+      if (fileInput) fileInput.value = "";
+      if (urlInput) urlInput.value = "";
       if (hiddenInput) hiddenInput.remove();
     };
 
@@ -502,7 +549,7 @@
       <div id="image-viewer-modal" class="modal">
         <div class="modal-content max-w-4xl">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">${description || 'Xem hình ảnh'}</h3>
+            <h3 class="text-lg font-semibold text-gray-900">${description || "Xem hình ảnh"}</h3>
             <button type="button" class="close-modal text-gray-400 hover:text-gray-600">
               <i class="fas fa-times"></i>
             </button>
@@ -531,7 +578,7 @@
   window.removeExistingImage = function (imageIndex) {
     if (confirm("Bạn có chắc chắn muốn xóa hình ảnh này?")) {
       const modal = document.getElementById("submit-result-modal");
-      const existingImages = JSON.parse(modal.dataset.existingImages || '[]');
+      const existingImages = JSON.parse(modal.dataset.existingImages || "[]");
 
       // Remove image from array
       existingImages.splice(imageIndex, 1);
@@ -547,7 +594,9 @@
   };
 
   function refreshExistingImagesDisplay(existingImages) {
-    const existingImagesContainer = document.querySelector('.existing-images-container');
+    const existingImagesContainer = document.querySelector(
+      ".existing-images-container",
+    );
     if (!existingImagesContainer) return;
 
     if (existingImages.length === 0) {
@@ -558,10 +607,12 @@
     existingImagesContainer.innerHTML = `
       <h4 class="text-sm font-medium text-gray-700 mb-3">Hình ảnh hiện có:</h4>
       <div class="grid grid-cols-2 gap-3">
-        ${existingImages.map((img, index) => `
+        ${existingImages
+          .map(
+            (img, index) => `
           <div class="existing-image-item border rounded-lg p-2">
             <div class="relative">
-              <img src="${img.type === 'base64' ? img.data : img.data}" 
+              <img src="${img.type === "base64" ? img.data : img.data}" 
                    class="w-full h-24 object-cover rounded border" 
                    alt="Existing image ${index + 1}"
                    onclick="viewImageFullSize('${img.data.replace(/'/g, "\\'")}', '${img.description}')"
@@ -576,38 +627,37 @@
             </div>
             <p class="text-xs text-gray-500 mt-1 truncate">${img.description || `Hình ảnh ${index + 1}`}</p>
           </div>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </div>
     `;
   }
 
   function handleSubmitResult(taskId, task, form) {
     const formData = new FormData(form);
-    const resultLinks = formData.get("resultLinks").trim();
+    const resultLinks = formData.get("resultLinks").trim() || "";
     const completion = parseInt(formData.get("completion") || 0);
-
-    if (!resultLinks) {
-      showToast("Vui lòng nhập ít nhất một link kết quả", "error");
-      return;
-    }
 
     // Get existing images from modal data
     const modal = document.getElementById("submit-result-modal");
-    const existingImages = JSON.parse(modal.dataset.existingImages || '[]');
+    const existingImages = JSON.parse(modal.dataset.existingImages || "[]");
 
     // Collect new image data (both URLs and base64)
     const newImages = [];
     const imageUrlInputs = form.querySelectorAll('input[name^="image_url_"]');
-    const imageBase64Inputs = form.querySelectorAll('input[name^="image_base64_"]');
+    const imageBase64Inputs = form.querySelectorAll(
+      'input[name^="image_base64_"]',
+    );
 
     // Process URL images
     imageUrlInputs.forEach((input, index) => {
       const url = input.value.trim();
       if (url) {
         newImages.push({
-          type: 'url',
+          type: "url",
           data: url,
-          description: `Hình ảnh mới ${newImages.length + 1} (Link)`
+          description: `Hình ảnh mới ${newImages.length + 1} (Link)`,
         });
       }
     });
@@ -617,9 +667,9 @@
       const base64Data = input.value.trim();
       if (base64Data) {
         newImages.push({
-          type: 'base64',
+          type: "base64",
           data: base64Data,
-          description: `Hình ảnh mới ${newImages.length + 1} (Upload)`
+          description: `Hình ảnh mới ${newImages.length + 1} (Upload)`,
         });
       }
     });
@@ -640,24 +690,23 @@
       dueDate: task[COL.T_DUE], // Gửi lại hạn chót cũ
       reportDate: formatDateToISOString(new Date()), // Gửi ngày hoàn thành là hôm nay (YYYY-MM-DD)
       target: task[COL.T_TARGET] || "",
-      resultLinks: task[COL.T_RESULT_LINKS] || "",
       output: task[COL.T_OUTPUT] || "",
       notes: task[COL.T_NOTES] || "",
       resultLinks: resultLinks,
       completion: completion,
-      images: allImages
+      images: allImages,
     };
 
     // Auto update status based on completion with enhanced logic
     if (completion >= 100) {
-      updateData['status'] = "Hoàn thành";
-      updateData['reportDate'] = formatDate(new Date());
+      updateData["status"] = "Hoàn thành";
+      updateData["reportDate"] = formatDate(new Date());
     } else if (completion >= 75) {
-      updateData['status'] = "Gần hoàn thành";
+      updateData["status"] = "Gần hoàn thành";
     } else if (completion >= 25) {
-      updateData['status'] = "Đang thực hiện";
+      updateData["status"] = "Đang thực hiện";
     } else if (completion > 0) {
-      updateData['status'] = "Bắt đầu";
+      updateData["status"] = "Bắt đầu";
     }
 
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -691,7 +740,9 @@
       return;
     }
 
-    const submitBtn = modal.querySelector('button[onclick="submitScore(${taskId})"]');
+    const submitBtn = modal.querySelector(
+      `button[onclick="submitScore('${taskId}')"]`,
+    );
     setButtonLoading(submitBtn, true);
 
     google.script.run

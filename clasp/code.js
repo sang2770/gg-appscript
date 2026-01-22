@@ -1576,7 +1576,7 @@ function updateTask(taskId, taskData) {
       ? String(taskData.notes).trim()
       : "";
     updatedTask[TASK_SCORE_COLUMN_NAME] = taskData.score
-      ? parseFloat(taskData.score) 
+      ? parseFloat(taskData.score)
       : null;
 
     updatedTask[TASK_IMAGES_COLUMN_NAME] = taskData.images || [];
@@ -3054,15 +3054,16 @@ function submitTaskScore(taskId, score) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
-    
-    const projectsData = getProjectData();
-    if (!projectsData) {
-      return { success: false, error: "Không thể tải dữ liệu dự án" };
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const projectSheet = ss.getSheetByName(PROJECT_SHEET_NAME);
+    if (!projectSheet) {
+      return { success: false, error: `Không tìm thấy sheet "${PROJECT_SHEET_NAME}".` };
     }
-    
-    const { sheet: projectSheet, headers: projectHeaders } = projectsData;
+
+    const projectHeaders = getHeaders(projectSheet);
     const jsonColIndex = projectHeaders.indexOf(PROJECT_TASKS_JSON_COLUMN_NAME);
-    
+
     if (jsonColIndex === -1) {
       return { success: false, error: "Không tìm thấy cột JSON trong sheet" };
     }
@@ -3082,7 +3083,7 @@ function submitTaskScore(taskId, score) {
       try {
         const tasks = JSON.parse(tasksJSON);
         const taskIndex = tasks.findIndex(task => task[TASK_ID_COLUMN_NAME] === taskId);
-        
+
         if (taskIndex !== -1) {
           targetProjectRow = i + 1; // Convert to 1-based index
           targetTaskIndex = taskIndex;
@@ -3114,7 +3115,7 @@ function submitTaskScore(taskId, score) {
     // Log the activity
     const taskName = projectTasks[targetTaskIndex][TASK_NAME_COLUMN_NAME] || "Nhiệm vụ";
     const projectId = data[targetProjectRow - 1][projectHeaders.indexOf(PROJECT_ID_COLUMN_NAME)];
-    
+
     logActivity(
       "Chấm điểm nhiệm vụ",
       `Nhiệm vụ: ${taskName}, Điểm: ${numScore}`,
@@ -3122,7 +3123,7 @@ function submitTaskScore(taskId, score) {
     );
 
     return { success: true };
-    
+
   } catch (e) {
     console.error("Error submitting task score:", e);
     return { success: false, error: e.message };
@@ -3154,7 +3155,10 @@ function uploadImageToDrive(imageData, fileName) {
     const IMAGE_FOLDER_NAME = "ProjectManagementImages";
     const folder = getOrCreateDriveFolder(IMAGE_FOLDER_NAME);
     const file = folder.createFile(blob);
-    return { success: true, url: file.getUrl() };
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileId = file.getId();
+    const fileUrl = `https://lh3.googleusercontent.com/u/0/d/${fileId}`;
+    return { success: true, url: fileUrl };
   } catch (e) {
     console.error("Error uploading image to Drive:", e);
     return { success: false, error: "Lỗi khi tải ảnh lên Drive: " + e.message };

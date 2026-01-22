@@ -4475,52 +4475,61 @@
     if (!container) return;
 
     // Calculate staff performance data
-    const staffPerformanceData = allStaff.map(staff => {
-      const staffName = staff[COL.S_NAME];
-      
-      // Get tasks assigned to this staff member
-      const staffTasks = allTasks.filter(task => task[COL.T_ASSIGNEE] === staffName);
-      
-      // Calculate total tasks and completed tasks
-      const totalTasks = staffTasks.length;
-      const completedTasks = staffTasks.filter(task => 
-        (task[COL.T_STATUS] || "").toLowerCase().includes("hoàn thành")
-      ).length;
-      
-      // Calculate scores - handling both number and string values
-      const taskScores = staffTasks
-        .map(task => {
-          const score = task[COL.T_SCORE];
-          if (score === undefined || score === null || score === '') return null;
-          const numScore = typeof score === 'string' ? parseFloat(score) : score;
-          return isNaN(numScore) ? null : numScore;
-        })
-        .filter(score => score !== null);
-      
-      const totalScore = taskScores.reduce((sum, score) => sum + score, 0);
-      const averageScore = taskScores.length > 0 ? (totalScore / taskScores.length) : 0;
-      const scoredTasks = taskScores.length;
-      
-      // Calculate completion rate
-      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const staffPerformanceData = allStaff
+      .map((staff) => {
+        const staffName = staff[COL.S_NAME];
 
-      return {
-        name: staffName,
-        position: staff[COL.S_POS] || 'Nhân viên',
-        totalTasks,
-        completedTasks,
-        completionRate,
-        totalScore: Math.round(totalScore * 100) / 100, // Round to 2 decimal places
-        averageScore: Math.round(averageScore * 100) / 100, // Round to 2 decimal places
-        scoredTasks
-      };
-    }).filter(staff => staff.totalTasks > 0); // Only show staff with tasks
+        // Get tasks assigned to this staff member
+        const staffTasks = allTasks.filter(
+          (task) => task[COL.T_ASSIGNEE] === staffName,
+        );
+
+        // Calculate total tasks and completed tasks
+        const totalTasks = staffTasks.length;
+        const completedTasks = staffTasks.filter((task) =>
+          (task[COL.T_STATUS] || "").toLowerCase().includes("hoàn thành"),
+        ).length;
+
+        // Calculate scores - handling both number and string values
+        const taskScores = staffTasks
+          .map((task) => {
+            const score = task[COL.T_SCORE];
+            if (score === undefined || score === null || score === "")
+              return null;
+            const numScore =
+              typeof score === "string" ? parseFloat(score) : score;
+            return isNaN(numScore) ? null : numScore;
+          })
+          .filter((score) => score !== null);
+
+        const totalScore = taskScores.reduce((sum, score) => sum + score, 0);
+        const averageScore =
+          taskScores.length > 0 ? totalScore / taskScores.length : 0;
+        const scoredTasks = taskScores.length;
+
+        // Calculate completion rate
+        const completionRate =
+          totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        return {
+          name: staffName,
+          position: staff[COL.S_POS] || "Nhân viên",
+          totalTasks,
+          completedTasks,
+          completionRate,
+          totalScore: Math.round(totalScore * 100) / 100, // Round to 2 decimal places
+          averageScore: Math.round(averageScore * 100) / 100, // Round to 2 decimal places
+          scoredTasks,
+        };
+      })
+      .filter((staff) => staff.totalTasks > 0); // Only show staff with tasks
 
     // Sort by average score descending
     staffPerformanceData.sort((a, b) => b.averageScore - a.averageScore);
 
     if (staffPerformanceData.length === 0) {
-      container.innerHTML = '<div class="loading-card">Không có dữ liệu để hiển thị</div>';
+      container.innerHTML =
+        '<div class="loading-card">Không có dữ liệu để hiển thị</div>';
       return;
     }
 
@@ -4581,26 +4590,42 @@
             </tr>
           </thead>
           <tbody>
-            ${staffPerformanceData.map((staff, index) => {
-              const isTopPerformer = index < 3 && staff.averageScore > 0;
-              const performanceClass = isTopPerformer ? 'bg-gradient-to-r from-yellow-50 to-orange-50' : '';
-              const completionColor = staff.completionRate >= 80 ? 'text-green-600 font-semibold' :
-                                    staff.completionRate >= 60 ? 'text-blue-600' :
-                                    staff.completionRate >= 40 ? 'text-orange-600' : 'text-red-600';
-              
-              const scoreColor = staff.averageScore >= 80 ? 'text-green-600 font-bold' :
-                               staff.averageScore >= 70 ? 'text-blue-600 font-semibold' :
-                               staff.averageScore >= 60 ? 'text-orange-600' :
-                               staff.averageScore > 0 ? 'text-red-600' : 'text-gray-500';
+            ${staffPerformanceData
+              .map((staff, index) => {
+                const isTopPerformer = index < 3 && staff.averageScore > 0;
+                const performanceClass = isTopPerformer
+                  ? "bg-gradient-to-r from-yellow-50 to-orange-50"
+                  : "";
+                const completionColor =
+                  staff.completionRate >= 80
+                    ? "text-green-600 font-semibold"
+                    : staff.completionRate >= 60
+                      ? "text-blue-600"
+                      : staff.completionRate >= 40
+                        ? "text-orange-600"
+                        : "text-red-600";
 
-              const rankBadge = index === 0 && staff.averageScore > 0 ? 
-                '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-2"><i class="fas fa-crown mr-1"></i>Top 1</span>' :
-                index === 1 && staff.averageScore > 0 ? 
-                '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ml-2"><i class="fas fa-medal mr-1"></i>Top 2</span>' :
-                index === 2 && staff.averageScore > 0 ? 
-                '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 ml-2"><i class="fas fa-award mr-1"></i>Top 3</span>' : '';
+                const scoreColor =
+                  staff.averageScore >= 80
+                    ? "text-green-600 font-bold"
+                    : staff.averageScore >= 70
+                      ? "text-blue-600 font-semibold"
+                      : staff.averageScore >= 60
+                        ? "text-orange-600"
+                        : staff.averageScore > 0
+                          ? "text-red-600"
+                          : "text-gray-500";
 
-              return `
+                const rankBadge =
+                  index === 0 && staff.averageScore > 0
+                    ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-2"><i class="fas fa-crown mr-1"></i>Top 1</span>'
+                    : index === 1 && staff.averageScore > 0
+                      ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ml-2"><i class="fas fa-medal mr-1"></i>Top 2</span>'
+                      : index === 2 && staff.averageScore > 0
+                        ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 ml-2"><i class="fas fa-award mr-1"></i>Top 3</span>'
+                        : "";
+
+                return `
                 <tr class="hover:bg-gray-50 ${performanceClass} transition-colors duration-200">
                   <td class="border border-gray-200 px-4 py-3">
                     <div class="flex items-center">
@@ -4632,24 +4657,25 @@
                     </div>
                   </td>
                   <td class="border border-gray-200 px-4 py-3 text-center">
-                    <span class="${scoreColor} text-sm">${staff.totalScore > 0 ? staff.totalScore : '--'}</span>
+                    <span class="${scoreColor} text-sm">${staff.totalScore > 0 ? staff.totalScore : "--"}</span>
                   </td>
                   <td class="border border-gray-200 px-4 py-3 text-center">
                     <div class="flex items-center justify-center">
-                      <span class="${scoreColor} text-lg font-bold">${staff.averageScore > 0 ? staff.averageScore : '--'}</span>
-                      ${staff.averageScore > 0 ? '<i class="fas fa-star text-yellow-400 ml-1 text-xs"></i>' : ''}
+                      <span class="${scoreColor} text-lg font-bold">${staff.averageScore > 0 ? staff.averageScore : "--"}</span>
+                      ${staff.averageScore > 0 ? '<i class="fas fa-star text-yellow-400 ml-1 text-xs"></i>' : ""}
                     </div>
                   </td>
                   <td class="border border-gray-200 px-4 py-3 text-center">
                     <span class="text-sm text-gray-600">${staff.scoredTasks} / ${staff.totalTasks}</span>
                     <div class="w-12 h-2 bg-gray-200 rounded-full mx-auto mt-1">
                       <div class="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full" 
-                           style="width: ${staff.totalTasks > 0 ? (staff.scoredTasks / staff.totalTasks * 100) : 0}%"></div>
+                           style="width: ${staff.totalTasks > 0 ? (staff.scoredTasks / staff.totalTasks) * 100 : 0}%"></div>
                     </div>
                   </td>
                 </tr>
               `;
-            }).join('')}
+              })
+              .join("")}
           </tbody>
         </table>
         
@@ -4668,7 +4694,7 @@
               <div class="text-xs text-gray-600">Đã hoàn thành</div>
             </div>
             <div>
-              <div class="text-lg font-bold text-orange-600">${Math.round((staffPerformanceData.reduce((sum, s) => sum + s.totalScore, 0) / Math.max(staffPerformanceData.filter(s => s.scoredTasks > 0).length, 1)) * 100) / 100}</div>
+              <div class="text-lg font-bold text-orange-600">${Math.round((staffPerformanceData.reduce((sum, s) => sum + s.totalScore, 0) / Math.max(staffPerformanceData.filter((s) => s.scoredTasks > 0).length, 1)) * 100) / 100}</div>
               <div class="text-xs text-gray-600">Điểm TB chung</div>
             </div>
           </div>
