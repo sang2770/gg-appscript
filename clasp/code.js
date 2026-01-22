@@ -3039,3 +3039,33 @@ function reorderTasks(projectId, orderedTaskIds) {
     lock.releaseLock();
   }
 }
+
+function getOrCreateDriveFolder(folderName) {
+  const rootFolder = DriveApp.getRootFolder();
+  const folders = rootFolder.getFoldersByName(folderName);
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return rootFolder.createFolder(folderName);
+  }
+}
+
+function uploadImageToDrive(imageData, fileName) {
+  try {
+    const contentType = imageData.match(
+      /^data:(image\/[a-zA-Z]+);base64,/,
+    )[1];
+    const base64Data = imageData.replace(
+      /^data:image\/[a-zA-Z]+;base64,/,
+      "",
+    );
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, fileName);
+
+    const folder = getOrCreateDriveFolder(IMAGE_FOLDER_NAME);
+    const file = folder.createFile(blob);
+    return { success: true, url: file.getUrl() };
+  } catch (e) {
+    console.error("Error uploading image to Drive:", e);
+    return { success: false, error: "Lỗi khi tải ảnh lên Drive: " + e.message };
+  }
+}
