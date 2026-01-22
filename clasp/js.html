@@ -1356,6 +1356,7 @@
       tasks: "Quản lý Nhiệm vụ",
       staff: "Quản lý Nhân viên",
       gantt: "Sơ đồ Gantt", // Thêm tiêu đề cho tab Gantt
+      calendar: "Lịch Nhiệm vụ", // Thêm tiêu đề cho tab Calendar
     };
     document.getElementById("page-title").textContent =
       titles[sectionName] || "Dashboard";
@@ -1374,6 +1375,13 @@
       setTimeout(() => {
         renderGanttChart();
         // setupGanttEventListeners() đã được gọi trong renderGanttChart() nên không cần gọi lại ở đây
+      }, 10);
+    }
+
+    // Nếu chuyển sang tab Calendar, render calendar view
+    if (sectionName === "calendar") {
+      setTimeout(() => {
+        initializeCalendar();
       }, 10);
     }
 

@@ -1,0 +1,404 @@
+<script>
+  // === CALENDAR VIEW FUNCTIONS ===
+
+  function renderCalendarView() {
+    const container = document.getElementById("calendar-view");
+    if (!container) return;
+
+    // Get today's date
+    const today = new Date();
+    const todayString = formatDateToISOString(today);
+
+    // Filter tasks that are due today or have start date today
+    const todayTasks = allTasks.filter((task) => {
+      const dueDate = task[COL.T_DUE];
+      const startDate = task[COL.T_START];
+
+      if (!dueDate && !startDate) return false;
+
+      const dueDateString = dueDate
+        ? formatDateToISOString(new Date(dueDate))
+        : null;
+      const startDateString = startDate
+        ? formatDateToISOString(new Date(startDate))
+        : null;
+
+      return dueDateString === todayString || startDateString === todayString;
+    });
+
+    // Organize tasks by status
+    const tasksByStatus = {
+      "Chưa bắt đầu": [],
+      "Tạm dừng": [],
+      "Đang thực hiện": [],
+      "Hoàn thành": [],
+    };
+
+    todayTasks.forEach((task) => {
+      const status = task[COL.T_STATUS] || "Chưa bắt đầu";
+
+      if (status.toLowerCase().includes("hoàn thành")) {
+        tasksByStatus["Hoàn thành"].push(task);
+      } else if (status.toLowerCase().includes("đang")) {
+        tasksByStatus["Đang thực hiện"].push(task);
+      } else if (status.toLowerCase().includes("tạm dừng")) {
+        tasksByStatus["Tạm dừng"].push(task);
+      } else {
+        tasksByStatus["Chưa bắt đầu"].push(task);
+      }
+    });
+
+    container.innerHTML = `
+      <div class="calendar-header mb-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-gray-900">Quản lý Nhiệm vụ Hôm nay</h2>
+          <div class="text-lg text-gray-600">
+            ${formatDateForDisplay(today)} - ${getDayOfWeek(today)}
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-gray-700">${tasksByStatus["Chưa bắt đầu"].length}</div>
+            <div class="text-sm text-gray-600">Chưa bắt đầu</div>
+          </div>
+          <div class="text-center p-3 bg-yellow-50 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-700">${tasksByStatus["Tạm dừng"].length}</div>
+            <div class="text-sm text-yellow-600">Tạm dừng</div>
+          </div>
+          <div class="text-center p-3 bg-blue-50 rounded-lg">
+            <div class="text-2xl font-bold text-blue-700">${tasksByStatus["Đang thực hiện"].length}</div>
+            <div class="text-sm text-blue-600">Đang thực hiện</div>
+          </div>
+          <div class="text-center p-3 bg-green-50 rounded-lg">
+            <div class="text-2xl font-bold text-green-700">${tasksByStatus["Hoàn thành"].length}</div>
+            <div class="text-sm text-green-600">Hoàn thành</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-kanban grid grid-cols-1 lg:grid-cols-4 gap-6">
+        ${createKanbanColumn("Chưa bắt đầu", tasksByStatus["Chưa bắt đầu"], "bg-gray-50 border-gray-200", "text-gray-700")}
+        ${createKanbanColumn("Tạm dừng", tasksByStatus["Tạm dừng"], "bg-yellow-50 border-yellow-200", "text-yellow-700")}
+        ${createKanbanColumn("Đang thực hiện", tasksByStatus["Đang thực hiện"], "bg-blue-50 border-blue-200", "text-blue-700")}
+        ${createKanbanColumn("Hoàn thành", tasksByStatus["Hoàn thành"], "bg-green-50 border-green-200", "text-green-700")}
+      </div>
+    `;
+  }
+
+  function createKanbanColumn(title, tasks, bgClass, textClass) {
+    return `
+      <div class="kanban-column ${bgClass} rounded-lg border-2 border-dashed p-4" data-status="${title}">
+        <div class="column-header mb-4">
+          <h3 class="font-semibold text-lg ${textClass} flex items-center justify-between">
+            ${title}
+            <span class="bg-white text-gray-700 text-sm px-2 py-1 rounded-full">${tasks.length}</span>
+          </h3>
+        </div>
+        <div class="column-content space-y-3 min-h-[300px]">
+          ${tasks.map((task) => createCalendarTaskCard(task)).join("")}
+          ${tasks.length === 0 ? `<div class="text-center text-gray-500 text-sm py-8">Không có nhiệm vụ</div>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function createCalendarTaskCard(task) {
+    const taskId = task[COL.T_ID] || "N/A";
+    const taskName = task[COL.T_NAME] || "Chưa có tên";
+    const taskDesc = task[COL.T_DESC] || "";
+    const taskAssignee = task[COL.T_ASSIGNEE] || "Chưa gán";
+    const taskPriority = task[COL.T_PRIORITY] || "Trung bình";
+    const taskDueDate = task[COL.T_DUE];
+    const taskStartDate = task[COL.T_START];
+    const taskCompletion = parseInt(task[COL.T_COMPLETION] || 0);
+    const taskProjectId = task[COL.T_PID];
+
+    // Check if task is due today
+    const today = new Date();
+    const todayString = formatDateToISOString(today);
+    const isDueToday =
+      taskDueDate &&
+      formatDateToISOString(new Date(taskDueDate)) === todayString;
+    const isStartToday =
+      taskStartDate &&
+      formatDateToISOString(new Date(taskStartDate)) === todayString;
+
+    // Find project info
+    const project = allProjects.find((p) => p[COL.P_ID] === taskProjectId);
+    const projectName = project ? project[COL.P_NAME] : taskProjectId;
+
+    const priorityClass = getPriorityClass(taskPriority);
+    const isHighlighted = isDueToday || isStartToday;
+
+    return `
+      <div class="task-card bg-white rounded-lg shadow-sm border hover:shadow-md transition-all duration-200 p-4 cursor-pointer task-clickable ${isHighlighted ? "ring-2 ring-orange-400 border-orange-300 bg-orange-50" : ""}" 
+           data-id="${taskId}"
+           draggable="true">
+        
+        ${isHighlighted ? '<div class="flex items-center text-orange-600 text-xs font-medium mb-2"><i class="fas fa-exclamation-circle mr-1"></i>Hạn hôm nay</div>' : ""}
+        
+        <div class="task-header mb-3">
+          <h4 class="font-medium text-gray-900 text-sm leading-tight mb-1">${taskName}</h4>
+          ${taskDesc ? `<p class="text-xs text-gray-600 line-clamp-2">${taskDesc}</p>` : ""}
+        </div>
+        
+        <div class="task-info space-y-2 text-xs text-gray-600">
+          <div class="flex items-center">
+            <i class="fas fa-folder mr-2 w-3"></i>
+            <span class="truncate">${projectName}</span>
+          </div>
+          <div class="flex items-center">
+            <i class="fas fa-user mr-2 w-3"></i>
+            <span class="truncate">${taskAssignee}</span>
+          </div>
+          ${
+            taskDueDate
+              ? `
+            <div class="flex items-center">
+              <i class="fas fa-calendar mr-2 w-3"></i>
+              <span>Hạn: ${formatDateForDisplay(taskDueDate)}</span>
+            </div>
+          `
+              : ""
+          }
+          ${
+            taskStartDate
+              ? `
+            <div class="flex items-center">
+              <i class="fas fa-play mr-2 w-3"></i>
+              <span>Bắt đầu: ${formatDateForDisplay(taskStartDate)}</span>
+            </div>
+          `
+              : ""
+          }
+        </div>
+        
+        <div class="task-footer mt-3 pt-3 border-t border-gray-100">
+          <div class="flex items-center justify-between">
+            <span class="status-badge ${priorityClass} text-xs">${taskPriority}</span>
+            <div class="flex items-center space-x-2">
+              <div class="w-12 h-2 bg-gray-200 rounded-full">
+                <div class="h-full ${getProgressColor(taskCompletion)} rounded-full transition-all duration-300" style="width: ${taskCompletion}%"></div>
+              </div>
+              <span class="text-xs font-medium ${getProgressTextColor(taskCompletion)}">${taskCompletion}%</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="task-actions mt-3 flex justify-end space-x-1">
+          ${(() => {
+            const project = allProjects.find(
+              (p) => p[COL.P_ID] === taskProjectId,
+            );
+            const isProjectManager =
+              project && project[COL.P_MANAGER] === currentUser.name;
+            const canSubmitResult =
+              isAdmin() ||
+              isProjectManager ||
+              task[COL.T_ASSIGNEE] === currentUser.name;
+            const canEdit =
+              isAdmin() ||
+              isProjectManager ||
+              task[COL.T_ASSIGNEE] === currentUser.name;
+
+            return `
+              ${canSubmitResult ? `<button class="action-btn action-btn-view submit-result-btn" data-type="task" data-id="${taskId}" data-name="${taskName}" title="Nộp kết quả"><i class="fas fa-upload text-xs"></i></button>` : ""}
+              ${canEdit ? `<button class="action-btn action-btn-edit edit-btn" data-type="task" data-id="${taskId}" title="Chỉnh sửa"><i class="fas fa-edit text-xs"></i></button>` : ""}
+            `;
+          })()}
+        </div>
+      </div>
+    `;
+  }
+
+  function formatDateToISOString(date) {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  }
+
+  function getDayOfWeek(date) {
+    const days = [
+      "Chủ nhật",
+      "Thứ hai",
+      "Thứ ba",
+      "Thứ tư",
+      "Thứ năm",
+      "Thứ sáu",
+      "Thứ bảy",
+    ];
+    return days[date.getDay()];
+  }
+
+  // Setup drag and drop functionality for status changes
+  function setupCalendarDragDrop() {
+    const columns = document.querySelectorAll(".kanban-column");
+    const cards = document.querySelectorAll(".task-card");
+
+    cards.forEach((card) => {
+      card.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", card.dataset.id);
+        card.classList.add("opacity-50");
+      });
+
+      card.addEventListener("dragend", (e) => {
+        card.classList.remove("opacity-50");
+      });
+    });
+
+    columns.forEach((column) => {
+      column.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        column.classList.add("bg-blue-100");
+      });
+
+      column.addEventListener("dragleave", (e) => {
+        if (!column.contains(e.relatedTarget)) {
+          column.classList.remove("bg-blue-100");
+        }
+      });
+
+      column.addEventListener("drop", (e) => {
+        e.preventDefault();
+        column.classList.remove("bg-blue-100");
+
+        const taskId = e.dataTransfer.getData("text/plain");
+        const newStatus = column.dataset.status;
+
+        if (taskId && newStatus) {
+          updateTaskStatus(taskId, newStatus);
+        }
+      });
+    });
+  }
+
+  function updateTaskStatus(taskId, newStatus) {
+    // Find the task
+    const task = allTasks.find((t) => t[COL.T_ID] === taskId);
+    if (!task) return;
+
+    // Map status names to actual status values
+    const statusMapping = {
+      "Chưa bắt đầu": "Chưa bắt đầu",
+      "Tạm dừng": "Tạm dừng",
+      "Đang thực hiện": "Đang thực hiện",
+      "Hoàn thành": "Hoàn thành",
+    };
+
+    const mappedStatus = statusMapping[newStatus];
+    if (!mappedStatus) return;
+
+    // Prepare update data
+    const updateData = {
+      id: taskId,
+      projectId: task[COL.T_PID],
+      name: task[COL.T_NAME],
+      status: mappedStatus,
+      completion:
+        mappedStatus === "Hoàn thành"
+          ? 100
+          : mappedStatus === "Đang thực hiện"
+            ? Math.max(task[COL.T_COMPLETION] || 0, 25)
+            : task[COL.T_COMPLETION] || 0,
+      description: task[COL.T_DESC] || "",
+      assignee: task[COL.T_ASSIGNEE] || "",
+      priority: task[COL.T_PRIORITY] || "Trung bình",
+      startDate: task[COL.T_START],
+      dueDate: task[COL.T_DUE],
+      target: task[COL.T_TARGET] || "",
+      output: task[COL.T_OUTPUT] || "",
+      notes: task[COL.T_NOTES] || "",
+      resultLinks: task[COL.T_RESULT_LINKS] || "",
+      images: task[COL.T_IMAGES] || [],
+    };
+
+    // If completing task, set report date
+    if (mappedStatus === "Hoàn thành") {
+      updateData.reportDate = formatDateToISOString(new Date());
+    }
+
+    showLoading("Đang cập nhật trạng thái...");
+
+    google.script.run
+      .withSuccessHandler(function (response) {
+        hideLoading();
+        if (response.success) {
+          showToast(
+            `Đã cập nhật trạng thái thành "${mappedStatus}"`,
+            "success",
+          );
+          refreshData();
+        } else {
+          showToast(response.error || "Lỗi khi cập nhật trạng thái", "error");
+        }
+      })
+      .withFailureHandler(function (error) {
+        hideLoading();
+        showToast("Lỗi: " + error.message, "error");
+      })
+      .updateTaskWithAuth(taskId, updateData);
+  }
+
+  // Initialize calendar view when called
+  function initializeCalendar() {
+    renderCalendarView();
+    setTimeout(() => {
+      setupCalendarDragDrop();
+    }, 100);
+  }
+</script>
+
+<style>
+  .kanban-column {
+    transition: all 0.3s ease;
+  }
+
+  .task-card {
+    transition: all 0.2s ease;
+  }
+
+  .task-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .task-card.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .calendar-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .calendar-header h2 {
+    color: white;
+  }
+
+  .calendar-header .text-lg {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  @media (max-width: 1024px) {
+    .calendar-kanban {
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .calendar-kanban {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
