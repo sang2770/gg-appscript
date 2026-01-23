@@ -147,7 +147,7 @@
               class="fas fa-folder-open ${getStatusIconClass(projectStatus)} text-sm"
             ></i>
           </div>
-          <span>Dự án</span>
+          <span>Kế hoạch</span>
           <div
             class="ml-auto w-2 h-2 rounded-full bg-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           ></div>
@@ -275,7 +275,6 @@
               >
               <div class="relative">
                 <input
-                  type="email"
                   id="login-email"
                   name="email"
                   required
@@ -406,7 +405,7 @@
               >
                 <a href="#" id="quick-add-project" class="quick-add-item">
                   <i class="fas fa-folder-plus text-purple-600"></i>
-                  <span>Dự án mới</span>
+                  <span>Kế hoạch mới</span>
                 </a>
                 <a href="#" id="quick-add-task" class="quick-add-item">
                   <i class="fas fa-plus-circle text-emerald-600"></i>
@@ -481,7 +480,7 @@
           <!-- Stats Cards - Enhanced with patterns -->
           <div class="stats-container">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <!-- Card 1: Tổng dự án -->
+              <!-- Card 1: Tổng Kế hoạch -->
               <div class="modern-stat-card group">
                 <div
                   class="card-gradient bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700"
@@ -493,7 +492,7 @@
                     </div>
                     <div class="main-stat">
                       <span class="stat-number" id="total-projects">-</span>
-                      <span class="stat-label">Tổng dự án</span>
+                      <span class="stat-label">Tổng Kế hoạch</span>
                     </div>
                   </div>
                   <div class="card-details">
@@ -671,7 +670,7 @@
 
             <div class="glass-card">
               <h3 class="text-lg font-semibold text-gray-900 mb-6">
-                Phân bố tiến độ dự án
+                Phân bố tiến độ Kế hoạch
               </h3>
               <div class="relative h-64">
                 <canvas id="project-progress-chart"></canvas>
@@ -732,7 +731,7 @@
 
             <div class="glass-card">
               <h3 class="text-lg font-semibold text-gray-900 mb-6">
-                So sánh dự án
+                So sánh Kế hoạch
               </h3>
               <div class="relative h-64">
                 <canvas id="project-comparison-chart"></canvas>
@@ -750,14 +749,14 @@
         <!-- Projects Section -->
         <div id="projects-section" class="section">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-2xl font-bold text-gray-900">Quản lý dự án</h3>
+            <h3 class="text-2xl font-bold text-gray-900">Quản lý Kế hoạch</h3>
             <div class="flex items-center space-x-3">
               <!-- Search input mới -->
               <div class="relative">
                 <input
                   type="text"
                   id="projects-search"
-                  placeholder="Tìm kiếm dự án..."
+                  placeholder="Tìm kiếm Kế hoạch..."
                   class="pl-10 pr-4 py-2 w-64 bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all duration-200"
                 />
                 <i
@@ -772,7 +771,7 @@
                 <option value="Tạm dừng">Tạm dừng</option>
               </select>
               <button id="add-project-standalone" class="btn-primary">
-                <i class="fas fa-plus mr-2"></i>Tạo dự án mới
+                <i class="fas fa-plus mr-2"></i>Tạo Kế hoạch mới
               </button>
             </div>
           </div>
@@ -828,7 +827,7 @@
             id="projects-grid"
             class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            <div class="loading-card">Đang tải dự án...</div>
+            <div class="loading-card">Đang tải Kế hoạch...</div>
           </div>
         </div>
 
@@ -958,18 +957,18 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- Dự án -->
+                  <!-- Kế hoạch -->
                   <tr class="bg-blue-50">
                     <td
                       colspan="4"
                       class="border border-gray-200 px-4 py-2 font-semibold text-blue-800 bg-blue-100"
                     >
-                      <i class="fas fa-folder-open mr-2"></i>QUẢN LÝ DỰ ÁN
+                      <i class="fas fa-folder-open mr-2"></i>QUẢN LÝ Kế hoạch
                     </td>
                   </tr>
                   <tr>
                     <td class="border border-gray-200 px-4 py-3 text-sm">
-                      Tạo dự án mới
+                      Tạo Kế hoạch mới
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <i class="fas fa-check text-green-500 text-lg"></i>
@@ -985,7 +984,7 @@
                   </tr>
                   <tr class="bg-gray-50">
                     <td class="border border-gray-200 px-4 py-3 text-sm">
-                      Xem tất cả dự án
+                      Xem tất cả Kế hoạch
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <i class="fas fa-check text-green-500 text-lg"></i>
@@ -999,7 +998,7 @@
                   </tr>
                   <tr>
                     <td class="border border-gray-200 px-4 py-3 text-sm">
-                      Sửa/xóa dự án được phân công
+                      Sửa/xóa Kế hoạch được phân công
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <i class="fas fa-check text-green-500 text-lg"></i>
@@ -1009,13 +1008,13 @@
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <div class="text-xs text-gray-500 mt-1">
-                        Chỉ sửa được trạng thái dự án
+                        Chỉ sửa được trạng thái Kế hoạch
                       </div>
                     </td>
                   </tr>
                   <tr class="bg-gray-50">
                     <td class="border border-gray-200 px-4 py-3 text-sm">
-                      Sao chép dự án
+                      Sao chép Kế hoạch
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <i class="fas fa-check text-green-500 text-lg"></i>
@@ -1049,7 +1048,7 @@
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <div class="text-xs text-gray-500 mt-1">
-                        Trong dự án được giao
+                        Trong Kế hoạch được giao
                       </div>
                     </td>
                   </tr>
@@ -1065,7 +1064,7 @@
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <div class="text-xs text-gray-500 mt-1">
-                        Nếu là người phụ trách dự án
+                        Nếu là người phụ trách Kế hoạch
                       </div>
                     </td>
                   </tr>
@@ -1109,7 +1108,7 @@
                     </td>
                     <td class="border border-gray-200 px-4 py-3 text-center">
                       <div class="text-xs text-gray-500 mt-1">
-                        Nếu là người phụ trách dự án
+                        Nếu là người phụ trách Kế hoạch
                       </div>
                     </td>
                   </tr>
@@ -1168,7 +1167,7 @@
                 <div class="flex-1 gantt-days"></div>
               </div>
 
-              <!-- Danh sách dự án và nhiệm vụ -->
+              <!-- Danh sách Kế hoạch và nhiệm vụ -->
               <div id="gantt-items" class="relative">
                 <div class="loading-card py-16">
                   Đang tải dữ liệu sơ đồ Gantt...

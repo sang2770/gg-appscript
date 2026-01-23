@@ -41,6 +41,7 @@ const PROJECT_ACTIVITY_LOG_JSON_COLUMN_NAME = "Nhật ký JSON";
 const STAFF_ID_COLUMN_NAME = "Mã NV";
 const STAFF_NAME_COLUMN_NAME = "Họ tên";
 const STAFF_EMAIL_COLUMN_NAME = "Email";
+const STAFF_CODE_COLUMN_NAME = "ID";
 const STAFF_POSITION_COLUMN_NAME = "Chức vụ";
 const STAFF_ROLE_COLUMN_NAME = "Phân quyền";
 const STAFF_PASSWORD_COLUMN_NAME = "Mật khẩu";
@@ -198,6 +199,7 @@ function authenticateUser(email, password) {
 
     const headers = getHeaders(staffSheet);
     const emailColIndex = headers.indexOf(STAFF_EMAIL_COLUMN_NAME);
+    const codeColIndex = headers.indexOf(STAFF_CODE_COLUMN_NAME);
     const passwordColIndex = headers.indexOf(STAFF_PASSWORD_COLUMN_NAME);
     const roleColIndex = headers.indexOf(STAFF_ROLE_COLUMN_NAME);
     const nameColIndex = headers.indexOf(STAFF_NAME_COLUMN_NAME);
@@ -205,7 +207,7 @@ function authenticateUser(email, password) {
 
     if (
       emailColIndex === -1 ||
-      passwordColIndex === -1 ||
+      (passwordColIndex === -1 && codeColIndex === -1) ||
       roleColIndex === -1
     ) {
       return { success: false, error: "Cấu trúc dữ liệu nhân viên không đúng" };
@@ -223,7 +225,7 @@ function authenticateUser(email, password) {
     // Find user by email
     for (let i = 0; i < values.length; i++) {
       const row = values[i];
-      const userEmail = String(row[emailColIndex] || "")
+      const userEmail = String(row[emailColIndex] || row[codeColIndex] || "")
         .trim()
         .toLowerCase();
       const userPassword = String(row[passwordColIndex] || "").trim();
