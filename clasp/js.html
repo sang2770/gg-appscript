@@ -1649,17 +1649,39 @@
     const container = document.getElementById("tasks-grid");
     if (!container) return;
 
-    // 1. Lọc nhiệm vụ (Giữ nguyên logic cũ)
+    // 1. Lọc nhiệm vụ (cập nhật để bao gồm task được giao theo quyền)
     let userTasks = [];
     if (isAdmin()) {
       userTasks = allTasks;
     } else {
       const userProjects = getUserAllowedProjects();
       userTasks = allTasks.filter((task) => {
+        // Kiểm tra task được giao trực tiếp
         if (task[COL.T_ASSIGNEE] === currentUser.name) return true;
+
+        // Kiểm tra task được giao theo quyền
+        if (task[COL.T_ASSIGNEE] && task[COL.T_ASSIGNEE].startsWith("@role:")) {
+          const requiredRole = task[COL.T_ASSIGNEE]
+            .replace("@role:", "")
+            .toLowerCase();
+          const userRole = (currentUser.role || "").toLowerCase();
+
+          // Kiểm tra user có đúng quyền được yêu cầu không
+          if (
+            requiredRole === userRole ||
+            (requiredRole === "quản lý" && userRole.includes("quản lý")) ||
+            (requiredRole === "nhân viên" && userRole.includes("nhân viên")) ||
+            (requiredRole === "admin" && userRole.includes("admin"))
+          ) {
+            return true;
+          }
+        }
+
+        // Kiểm tra user có phải là quản lý dự án không
         const projectId = task[COL.T_PID];
         const project = allProjects.find((p) => p[COL.P_ID] === projectId);
         if (project && project[COL.P_MANAGER] === currentUser.name) return true;
+
         return false;
       });
     }
@@ -1759,7 +1781,15 @@
   function createTaskTableRowSimple(task) {
     const taskId = task[COL.T_ID] || "N/A";
     const taskName = task[COL.T_NAME] || "Chưa có tên";
-    const taskAssignee = task[COL.T_ASSIGNEE] || "Chưa gán";
+    const rawAssignee = task[COL.T_ASSIGNEE] || "Chưa gán";
+
+    // Kiểm tra và hiển thị assignee theo quyền
+    let taskAssignee = rawAssignee;
+    if (rawAssignee.startsWith("@role:")) {
+      const role = rawAssignee.replace("@role:", "");
+      taskAssignee = `🎭 ${role}`;
+    }
+
     const taskStatus = task[COL.T_STATUS] || "Chưa bắt đầu";
     const taskPriority = task[COL.T_PRIORITY] || "Trung bình";
     const taskStartDate = formatDateForDisplay(task[COL.T_START]);
@@ -2661,6 +2691,16 @@
     const title = isEdit ? "Chỉnh sửa nhiệm vụ" : "Tạo nhiệm vụ mới";
     const submitText = isEdit ? "Cập nhật" : "Tạo nhiệm vụ";
 
+    // Kiểm tra xem task có được giao theo quyền không
+    const isAssignedByRole =
+      isEdit &&
+      data &&
+      data[COL.T_ASSIGNEE] &&
+      data[COL.T_ASSIGNEE].startsWith("@role:");
+    const assignedRole = isAssignedByRole
+      ? data[COL.T_ASSIGNEE].replace("@role:", "")
+      : "";
+
     // Lọc danh sách nhân viên có thể giao việc
     let assignableStaff = [];
 
@@ -2828,6 +2868,36 @@
           startDateInput.setAttribute("max", this.value);
         });
       }
+
+      // Xử lý logic chọn theo quyền
+      const assignByRoleCheckbox = document.getElementById("assign-by-role");
+      const roleSelectionDiv = document.getElementById("role-selection");
+      const individualSelectionDiv = document.getElementById(
+        "individual-selection",
+      );
+      const assigneeRoleSelect = document.querySelector(
+        'select[name="assigneeRole"]',
+      );
+
+      if (assignByRoleCheckbox && roleSelectionDiv && individualSelectionDiv) {
+        assignByRoleCheckbox.addEventListener("change", function () {
+          if (this.checked) {
+            roleSelectionDiv.classList.remove("hidden");
+            individualSelectionDiv.classList.add("hidden");
+          } else {
+            roleSelectionDiv.classList.add("hidden");
+            individualSelectionDiv.classList.remove("hidden");
+            // Reset role selection
+            assigneeRoleSelect.value = "";
+          }
+        });
+
+        // Xử lý khi chọn role
+        assigneeRoleSelect.addEventListener("change", function () {
+          // Logic này sẽ được xử lý khi submit form
+          console.log("Selected role:", this.value);
+        });
+      }
     }, 100);
 
     return `
@@ -2872,35 +2942,60 @@
                     <textarea name="description" class="form-textarea" ${shouldDisableTopFields ? "disabled" : ""}>${isEdit ? data[COL.T_DESC] || "" : ""}</textarea>
                   </div>
                   
-                  <div class="grid grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 gap-4">
                       <div class="form-group">
                         <label class="form-label">Người thực hiện</label>
-                        <select name="assignee" class="form-select" ${shouldDisableTopFields ? "disabled" : ""}>
-                          <option value="">-- Chọn người thực hiện --</option>
-                          ${assignableStaff
-                            .map((staff) => {
-                              let selected = "";
-                              if (isEdit) {
-                                selected =
-                                  data[COL.T_ASSIGNEE] === staff[COL.S_NAME]
-                                    ? "selected"
+                        <div class="space-y-2">
+                          <!-- Checkbox chọn theo quyền -->
+                          <div class="flex items-center space-x-2 mb-2">
+                            <input type="checkbox" id="assign-by-role" class="form-checkbox" ${shouldDisableTopFields ? "disabled" : ""} ${isAssignedByRole ? "checked" : ""}>
+                            <label for="assign-by-role" class="text-sm text-gray-600">Chọn theo quyền</label>
+                          </div>
+                          
+                          <!-- Dropdown chọn quyền -->
+                          <div id="role-selection" class="${isAssignedByRole ? "" : "hidden"}">
+                            <select name="assigneeRole" class="form-select" ${shouldDisableTopFields ? "disabled" : ""}>
+                              <option value="">-- Chọn quyền --</option>
+                              <option value="admin" ${assignedRole === "admin" ? "selected" : ""}>Admin</option>
+                              <option value="quản lý" ${assignedRole === "quản lý" ? "selected" : ""}>Quản lý</option>
+                              <option value="nhân viên" ${assignedRole === "nhân viên" ? "selected" : ""}>Nhân viên</option>
+                            </select>
+                          </div>
+                          
+                          <!-- Dropdown chọn người cụ thể -->
+                          <div id="individual-selection" class="${isAssignedByRole ? "hidden" : ""}">
+                            <select name="assignee" class="form-select" ${shouldDisableTopFields ? "disabled" : ""}>
+                              <option value="">-- Chọn người thực hiện --</option>
+                              ${assignableStaff
+                                .map((staff) => {
+                                  let selected = "";
+                                  if (isEdit && !isAssignedByRole) {
+                                    selected =
+                                      data[COL.T_ASSIGNEE] === staff[COL.S_NAME]
+                                        ? "selected"
+                                        : "";
+                                  } else if (!isEdit && !isAdmin()) {
+                                    // Nếu không phải admin thì auto-select user hiện tại
+                                    selected =
+                                      staff[COL.S_NAME] === currentUser.name
+                                        ? "selected"
+                                        : "";
+                                  }
+                                  const staffEmail = staff[COL.S_EMAIL]
+                                    ? ` (${staff[COL.S_EMAIL]})`
                                     : "";
-                              } else if (!isAdmin()) {
-                                // Nếu không phải admin thì auto-select user hiện tại
-                                selected =
-                                  staff[COL.S_NAME] === currentUser.name
-                                    ? "selected"
-                                    : "";
-                              }
-                              const staffEmail = staff[COL.S_EMAIL]
-                                ? ` (${staff[COL.S_EMAIL]})`
-                                : "";
-                              return `<option value="${staff[COL.S_NAME]}" ${selected}>${staff[COL.S_NAME]}${staffEmail}</option>`;
-                            })
-                            .join("")}
-                        </select>
+                                  const staffRole = staff[COL.S_ROLE] || "";
+                                  return `<option value="${staff[COL.S_NAME]}" data-role="${staffRole}" ${selected}>${staff[COL.S_NAME]}${staffEmail} (${staffRole})</option>`;
+                                })
+                                .join("")}
+                            </select>
+                          </div>
+                        </div>
                       </div>
-                      <div class="form-group">
+                  </div>
+                  
+                  <div class="grid grid-cols-3 gap-4">
+                        <div class="form-group">
                           <label class="form-label">Ưu tiên</label>
                           <select name="priority" class="form-select" ${shouldDisableTopFields ? "disabled" : ""}>
                               <option value="Thấp" ${isEdit && data[COL.T_PRIORITY] === "Thấp" ? "selected" : ""}>Thấp</option>
@@ -2908,9 +3003,6 @@
                               <option value="Cao" ${isEdit && data[COL.T_PRIORITY] === "Cao" ? "selected" : ""}>Cao</option>
                           </select>
                       </div>
-                  </div>
-                  
-                  <div class="grid grid-cols-2 gap-4">
                       <div class="form-group">
                           <label class="form-label required">Ngày bắt đầu</label>
                           <input type="date" name="startDate" class="form-input" required value="${isEdit ? formatDateForInput(data[COL.T_START]) : ""}" ${shouldDisableTopFields ? "disabled" : ""}>
@@ -3085,6 +3177,24 @@
           data[field.name] = field.value;
         }
       });
+
+      // Xử lý chọn theo quyền
+      const assignByRoleCheckbox = form.querySelector("#assign-by-role");
+      const assigneeRoleSelect = form.querySelector(
+        'select[name="assigneeRole"]',
+      );
+
+      if (
+        assignByRoleCheckbox &&
+        assignByRoleCheckbox.checked &&
+        assigneeRoleSelect
+      ) {
+        const selectedRole = assigneeRoleSelect.value;
+        if (selectedRole) {
+          // Thay thế assignee bằng role
+          data.assignee = `@role:${selectedRole}`;
+        }
+      }
     }
 
     const tempId = `TEMP_${Date.now()}`;
@@ -3163,6 +3273,24 @@
           data[field.name] = field.value;
         }
       });
+
+      // Xử lý chọn theo quyền
+      const assignByRoleCheckbox = form.querySelector("#assign-by-role");
+      const assigneeRoleSelect = form.querySelector(
+        'select[name="assigneeRole"]',
+      );
+
+      if (
+        assignByRoleCheckbox &&
+        assignByRoleCheckbox.checked &&
+        assigneeRoleSelect
+      ) {
+        const selectedRole = assigneeRoleSelect.value;
+        if (selectedRole) {
+          // Thay thế assignee bằng role
+          data.assignee = `@role:${selectedRole}`;
+        }
+      }
     }
 
     const id = formData.get("id");
