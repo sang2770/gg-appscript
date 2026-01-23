@@ -61,6 +61,24 @@ const CHAT_JSON_COLUMN_NAME = "Chat JSON";
 // == HÀM CHÍNH (GIAO TIẾP VỚI FRONTEND) ==
 // ==================================
 
+function requireAllScopes() {
+  // 1. Quyền Google Drive (đọc, ghi)
+  // Tạo một thư mục tạm để yêu cầu quyền drive + drive.readonly
+  var folder = DriveApp.createFolder("TEMP_CHECK_PERMISSION");
+  var folderId = folder.getId();
+  var folders = DriveApp.getFolders();
+
+  // 2. Quyền Google Sheets (đọc, ghi)
+  // Tạo một bảng tính tạm và đọc nội dung
+  var sheet = SpreadsheetApp.create("TEMP_CHECK_PERMISSION_SHEET");
+  var sheetId = sheet.getId();
+  var data = sheet.getSheets()[0].getDataRange().getValues();
+
+  // Xóa (dọn dẹp) sau khi kiểm tra quyền
+  DriveApp.getFileById(sheetId).setTrashed(true);
+  DriveApp.getFolderById(folderId).setTrashed(true);
+}
+
 /**
  * Phục vụ giao diện HTML khi truy cập URL ứng dụng web.
  */

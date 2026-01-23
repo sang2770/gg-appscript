@@ -26,8 +26,7 @@
         : null;
 
       return (
-        dueDateString === currentDateString ||
-        startDateString === currentDateString
+        startDateString <= currentDateString && currentDateString <= dueDateString
       );
     });
 
@@ -141,16 +140,13 @@
     const isDueOnSelectedDate =
       taskDueDate &&
       formatDateToISOString(new Date(taskDueDate)) === selectedDateString;
-    const isStartOnSelectedDate =
-      taskStartDate &&
-      formatDateToISOString(new Date(taskStartDate)) === selectedDateString;
 
     // Find project info
     const project = allProjects.find((p) => p[COL.P_ID] === taskProjectId);
     const projectName = project ? project[COL.P_NAME] : taskProjectId;
 
     const priorityClass = getPriorityClass(taskPriority);
-    const isHighlighted = isDueOnSelectedDate || isStartOnSelectedDate;
+    const isHighlighted = isDueOnSelectedDate;
 
     // Check if selected date is today for highlighting
     const today = new Date();
@@ -169,7 +165,7 @@
           ${taskDesc ? `<p class="text-xs text-gray-600 line-clamp-2">${taskDesc}</p>` : ""}
         </div>
         
-        <div class="task-info space-y-2 text-xs text-gray-600">
+        <div class="task-info space-y-2 text-xs text-gray-600 flex-wrap gap-2">
           <div class="flex items-center">
             <i class="fas fa-folder mr-2 w-3"></i>
             <span class="truncate">${projectName}</span>
