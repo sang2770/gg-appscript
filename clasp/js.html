@@ -1655,6 +1655,7 @@
       userTasks = allTasks;
     } else {
       const userProjects = getUserAllowedProjects();
+      console.log("User's allowed projects:", userTasks, allTasks);
       userTasks = allTasks.filter((task) => {
         // Kiểm tra task được giao trực tiếp
         if (task[COL.T_ASSIGNEE] === currentUser.name) return true;
@@ -1665,7 +1666,6 @@
             .replace("@role:", "")
             .toLowerCase();
           const userRole = (currentUser.role || "").toLowerCase();
-
           // Kiểm tra user có đúng quyền được yêu cầu không
           if (
             requiredRole === userRole ||

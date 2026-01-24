@@ -181,6 +181,25 @@ function parseSheetData(values) {
   });
 }
 
+function checkTaskByRoleAssignee(task, currentUser) {
+  // Kiểm tra task được giao theo quyền
+  if (task[TASK_ASSIGNEE_COLUMN_NAME] && task[TASK_ASSIGNEE_COLUMN_NAME].startsWith("@role:")) {
+    const requiredRole = task[TASK_ASSIGNEE_COLUMN_NAME]
+      .replace("@role:", "")
+      .toLowerCase();
+    const userRole = (currentUser.role || "").toLowerCase();
+    // Kiểm tra user có đúng quyền được yêu cầu không
+    if (
+      requiredRole === userRole ||
+      (requiredRole === "quản lý" && userRole.includes("quản lý")) ||
+      (requiredRole === "nhân viên" && userRole.includes("nhân viên")) ||
+      (requiredRole === "admin" && userRole.includes("admin"))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 /**
  * Authenticate user with email and password
  */
@@ -421,7 +440,8 @@ function getDataForUser() {
             return true;
           }
 
-          return false;
+
+          return checkTaskByRoleAssignee(task, currentUser);
         });
 
         // === FILTER PROJECTS: Managers see projects they manage or have tasks in ===
@@ -447,6 +467,10 @@ function getDataForUser() {
         tasks = tasks.filter((task) => {
           const assignee = String(task[TASK_ASSIGNEE_COLUMN_NAME] || "").trim();
           if (assignee === currentUser.name) {
+            return true;
+          }
+
+          if (checkTaskByRoleAssignee(task, currentUser)) {
             return true;
           }
 
@@ -734,6 +758,11 @@ function getInitialDataWithAuth() {
           if (managerProjectIds.includes(task[TASK_PROJECT_ID_COLUMN_NAME])) {
             return true;
           }
+          // Kiểm tra task được giao theo quyền
+          if (checkTaskByRoleAssignee(task, currentUser)) {
+            return true;
+          }
+
           return false;
         });
 
@@ -760,6 +789,10 @@ function getInitialDataWithAuth() {
           const project = projects.find(
             (p) => p[PROJECT_ID_COLUMN_NAME] === projectId,
           );
+          // Kiểm tra task được giao theo quyền
+          if (checkTaskByRoleAssignee(task, currentUser)) {
+            return true;
+          }
           return (
             project && project[PROJECT_MANAGER_COLUMN_NAME] === currentUser.name
           );
